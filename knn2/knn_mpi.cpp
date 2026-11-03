@@ -21,8 +21,11 @@
 // Ejecutar (desde la carpeta build/, donde están train/ y test/):
 //             mpirun -np 4 ./knn_mpi
 // Parámetros opcionales (para probar otros tamaños del problema):
-//             mpirun -np 4 ./knn_mpi [maxK] [folds] [muestras_ajuste] [muestras_test]
-//             por defecto: 10 5 20000 todas
+//             mpirun -np 4 ./knn_mpi [maxK] [folds] [muestras_ajuste] [muestras_test] [entrenamiento_final]
+//             por defecto: 10 5 20000 todas todas (= problema completo)
+//             Con el problema completo el ajuste pesa ~84 % y la evaluacion final ~16 %.
+//             En pruebas pequenas, reduce tambien [entrenamiento_final] (p. ej. 4000 1000 12000)
+//             para conservar una proporcion parecida.
 // =============================================================================
 
 #include <mpi.h>
@@ -32,6 +35,7 @@
 #include "mnist.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
@@ -101,6 +105,9 @@ int main(int argc, char **argv)
     MPI_Init(&argc, &argv);
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank); // identificador de este proceso: 0 .. size-1
+    // Para gprof (binarios compilados con -pg): cada proceso escribe su propio fichero gmon_rank<N>.<pid>
+    // en vez de pisarse todos en gmon.out. En los binarios normales esta variable no se usa.
+    { char gp[32]; std::snprintf(gp, sizeof gp, "gmon_rank%d", rank); setenv("GMON_OUT_PREFIX", gp, 1); }
     MPI_Comm_size(MPI_COMM_WORLD, &size); // número total de procesos
 
     // ---- Parámetros del problema (por defecto, los de main.cc) -------------
@@ -108,16 +115,18 @@ int main(int argc, char **argv)
     unsigned maxK = 10, folds = 5;
     std::size_t tuningSamples = 20000;
     std::size_t testSamples = std::numeric_limits<std::size_t>::max();
+    std::size_t finalTrainSamples = std::numeric_limits<std::size_t>::max();
     try
     {
         if (argc > 1) maxK = std::stoul(argv[1]);
         if (argc > 2) folds = std::stoul(argv[2]);
         if (argc > 3) tuningSamples = std::stoul(argv[3]);
         if (argc > 4) testSamples = std::stoul(argv[4]);
+        if (argc > 5) finalTrainSamples = std::stoul(argv[5]);
     }
     catch (const std::exception &)
     {
-        abortAll(rank, "Uso: knn_mpi [maxK] [folds] [muestras_ajuste] [muestras_test]");
+        abortAll(rank, "Uso: knn_mpi [maxK] [folds] [muestras_ajuste] [muestras_test] [entrenamiento_final]");
     }
     if (maxK <= minK || folds < 2)
         abortAll(rank, "Se necesita maxK > 1 y folds >= 2");
@@ -182,7 +191,16 @@ int main(int argc, char **argv)
 
     // ---- 3. Evaluación final con el mejor K: bloques de muestras de test ----
     t = MPI_Wtime();
-    const KNN knn(train, bestK);
+    // Entrenamiento de la evaluacion final: por defecto, todo el conjunto.
+    const std::size_t nFinalTrain = std::min(train.size(), finalTrainSamples);
+    std::vector<TSample> reducedTrain;
+    const std::vector<TSample> *finalTrain = &train;
+    if (nFinalTrain < train.size())
+    {
+        reducedTrain.assign(train.begin(), train.begin() + nFinalTrain);
+        finalTrain = &reducedTrain;
+    }
+    const KNN knn(*finalTrain, bestK);
     const std::size_t nTest = std::min(test.size(), testSamples);
     const std::size_t begin = nTest * static_cast<std::size_t>(rank) / size;
     const std::size_t end = nTest * static_cast<std::size_t>(rank + 1) / size;
@@ -213,7 +231,8 @@ int main(int argc, char **argv)
     if (rank == 0)
     {
         std::cout << "Procesos MPI: " << size << " | K en [" << minK << ", " << maxK << "], " << folds
-                  << " folds, " << nTuning << " muestras de ajuste, " << nTest << " de test" << std::endl;
+                  << " folds, " << nTuning << " muestras de ajuste, " << nTest << " de test, "
+                  << nFinalTrain << " de entrenamiento final" << std::endl;
         // Mismo formato que el secuencial (6 cifras significativas) para poder compararlos.
         for (int ki = 0; ki < numK; ki++)
             std::cout << "K: " << minK + ki << " Accuracy: " << accPerK[ki] * 100 << "%" << std::endl;
@@ -232,6 +251,15 @@ int main(int argc, char **argv)
         std::cout << "Reparto del ajuste por proceso (tareas / segundos de calculo):" << std::endl;
         for (int r = 0; r < size; r++)
             std::cout << "  proceso " << r << ": " << tuneTasks[r] << " tareas, " << tuneTimes[r] << " s" << std::endl;
+
+        // Linea legible por maquina (la recoge run_all.sh). Columnas:
+        // version,np,tuning,test,final_train,max_k,folds,best_k,test_acc,total_s,
+        // load_s,tune_s,final_s,comm_s,nT,nE,restarts,wasted_s   (nT..wasted_s no aplican aqui)
+        char csv[512];
+        std::snprintf(csv, sizeof csv, "CSV,knn_mpi,%d,%zu,%zu,%zu,%u,%u,%u,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,,,,",
+                      size, nTuning, nTest, nFinalTrain, maxK, folds, bestK, totalMatches / (double)nTest,
+                      worst[5], worst[0], worst[1], worst[3], worst[2] + worst[4]);
+        std::cout << csv << std::endl;
     }
 
     MPI_Finalize();

@@ -1,70 +1,59 @@
 RESUMEN  (tiempos en segundos; media de las repeticiones)
-speed-up = T_secuencial / T_paralelo (mismo N, secuencial del mismo sabor);  eficiencia = speed-up / procesos
-vs orig = speed-up respecto al secuencial ORIGINAL (incluye el efecto de las limpiezas);  KF = Karp-Flatt
-sabor [orig] = biblioteca del profesor tal cual;  [opt] = con las limpiezas de la Tarea 0
+speed-up = T_secuencial / T_paralelo (mismo N);  eficiencia = speed-up / procesos;  KF = Karp-Flatt (fraccion serie efectiva)
 
 === N = 2000  (test = 1000, entrenamiento final = 6000)
-   secuencial [orig]: total 4.868  (carga 0.230, ajuste 3.886 = 80 %, evaluacion final 0.752 = 15 %)
-      Amdahl: fraccion secuencial medida (carga replicada) f = 0.0472  ->  speed-up maximo teorico <= 21.2
-   secuencial [opt]: total 4.664  (carga 0.230, ajuste 3.718 = 80 %, evaluacion final 0.716 = 15 %)
-      Amdahl: fraccion secuencial medida (carga replicada) f = 0.0494  ->  speed-up maximo teorico <= 20.2
-   efecto de las limpiezas en el secuencial: 4.868 s -> 4.664 s (x1.044)
-   version                          p     total  speed-up  efic.      KF  vs orig   notas
-   paso 1: datos [opt]              1     4.739      0.98   0.98       -     1.03   comunicacion+espera=0.000s (0.0 % del total)
-   paso 1: datos [opt]              2     2.620      1.78   0.89   0.124     1.86   comunicacion+espera=0.044s (1.7 % del total)
-   paso 1: datos [opt]              3     1.940      2.40   0.80   0.124     2.51   comunicacion+espera=0.116s (6.0 % del total)
-   paso 1: datos [opt]              4     1.659      2.81   0.70   0.141     2.93   comunicacion+espera=0.141s (8.5 % del total)
-   paso 1: datos [opt]              6     1.446      3.23   0.54   0.172     3.37   comunicacion+espera=0.137s (9.5 % del total)
-   paso 2: especulativa [opt]       2     4.298      1.09   0.54   0.843     1.13   ajuste=1 eval=1 reinicios=1.0 descartado=0.88s
-   paso 2: especulativa [opt]       3     2.270      2.05   0.68   0.230     2.14   ajuste=2 eval=1 reinicios=1.0 descartado=0.82s
-   paso 2: especulativa [opt]       4     1.936      2.41   0.60   0.220     2.51   ajuste=3 eval=1 reinicios=1.0 descartado=0.66s
-   paso 2: especulativa [opt]       6     1.741      2.68   0.45   0.248     2.80   ajuste=5 eval=1 reinicios=1.0 descartado=0.44s
-   paso 3: dinamica+ayuda [opt]     2     3.245      1.44   0.72   0.391     1.50   ajuste=1 eval=1 reinicios=1.0 descartado=0.86s
-   paso 3: dinamica+ayuda [opt]     3     2.410      1.94   0.65   0.275     2.02   ajuste=2 eval=1 reinicios=1.0 descartado=0.80s
-   paso 3: dinamica+ayuda [opt]     4     2.145      2.17   0.54   0.280     2.27   ajuste=3 eval=1 reinicios=1.0 descartado=0.85s
-   paso 3: dinamica+ayuda [opt]     6     2.268      2.06   0.34   0.383     2.15   ajuste=5 eval=1 reinicios=1.0 descartado=0.75s
+   secuencial: total 5.069  (carga 0.235, ajuste 4.032 = 80 %, evaluacion final 0.803 = 16 %)
+   Amdahl: fraccion secuencial medida (carga replicada) f = 0.0463  ->  speed-up maximo teorico <= 21.6
+   version                    p     total  speed-up  efic.      KF   notas
+   paso 1: datos              1     4.994      1.02   1.02       -   comunicacion+espera=0.000s (0.0 % del total)
+   paso 1: datos              2     2.746      1.85   0.92   0.083   comunicacion+espera=0.056s (2.0 % del total)
+   paso 1: datos              3     2.036      2.49   0.83   0.103   comunicacion+espera=0.069s (3.4 % del total)
+   paso 1: datos              4     1.668      3.04   0.76   0.105   comunicacion+espera=0.123s (7.3 % del total)
+   paso 1: datos              6     1.506      3.37   0.56   0.157   comunicacion+espera=0.238s (15.8 % del total)
+   paso 2: especulativa       2     4.386      1.16   0.58   0.730   ajuste=1 eval=1 reinicios=1.0 descartado=0.89s
+   paso 2: especulativa       3     2.436      2.08   0.69   0.221   ajuste=2 eval=1 reinicios=1.0 descartado=0.86s
+   paso 2: especulativa       4     1.836      2.76   0.69   0.150   ajuste=3 eval=1 reinicios=1.0 descartado=0.68s
+   paso 2: especulativa       6     1.913      2.65   0.44   0.253   ajuste=5 eval=1 reinicios=1.0 descartado=0.63s
+   paso 3: dinamica+ayuda     2     3.450      1.47   0.73   0.361   ajuste=1 eval=1 reinicios=1.0 descartado=0.85s
+   paso 3: dinamica+ayuda     3     2.582      1.96   0.65   0.264   ajuste=2 eval=1 reinicios=1.0 descartado=0.89s
+   paso 3: dinamica+ayuda     4     2.090      2.43   0.61   0.216   ajuste=3 eval=1 reinicios=1.0 descartado=0.85s
+   paso 3: dinamica+ayuda     6     1.766      2.87   0.48   0.218   ajuste=5 eval=1 reinicios=1.0 descartado=0.52s
 
 === N = 4000  (test = 2000, entrenamiento final = 12000)
-   secuencial [orig]: total 21.283  (carga 0.299, ajuste 17.649 = 83 %, evaluacion final 3.335 = 16 %)
-      Amdahl: fraccion secuencial medida (carga replicada) f = 0.0141  ->  speed-up maximo teorico <= 71.1
-   secuencial [opt]: total 19.670  (carga 0.238, ajuste 16.147 = 82 %, evaluacion final 3.286 = 17 %)
-      Amdahl: fraccion secuencial medida (carga replicada) f = 0.0121  ->  speed-up maximo teorico <= 82.5
-   efecto de las limpiezas en el secuencial: 21.283 s -> 19.670 s (x1.082)
-   version                          p     total  speed-up  efic.      KF  vs orig   notas
-   paso 1: datos [opt]              1    19.434      1.01   1.01       -     1.10   comunicacion+espera=0.000s (0.0 % del total)
-   paso 1: datos [opt]              2    10.062      1.95   0.98   0.023     2.12   comunicacion+espera=0.171s (1.7 % del total)
-   paso 1: datos [opt]              3     7.507      2.62   0.87   0.072     2.84   comunicacion+espera=0.362s (4.8 % del total)
-   paso 1: datos [opt]              4     5.908      3.33   0.83   0.067     3.60   comunicacion+espera=0.433s (7.3 % del total)
-   paso 1: datos [opt]              6     5.478      3.59   0.60   0.134     3.89   comunicacion+espera=0.652s (11.9 % del total)
-   paso 2: especulativa [opt]       2    17.071      1.15   0.58   0.736     1.25   ajuste=1 eval=1 reinicios=1.0 descartado=3.49s
-   paso 2: especulativa [opt]       3     8.799      2.24   0.75   0.171     2.42   ajuste=2 eval=1 reinicios=1.0 descartado=3.46s
-   paso 2: especulativa [opt]       4     7.300      2.69   0.67   0.162     2.92   ajuste=3 eval=1 reinicios=1.0 descartado=3.28s
-   paso 2: especulativa [opt]       6     6.653      2.96   0.49   0.206     3.20   ajuste=5 eval=1 reinicios=1.0 descartado=2.39s
-   paso 3: dinamica+ayuda [opt]     2    12.291      1.60   0.80   0.250     1.73   ajuste=1 eval=1 reinicios=1.0 descartado=3.68s
-   paso 3: dinamica+ayuda [opt]     3     8.442      2.33   0.78   0.144     2.52   ajuste=2 eval=1 reinicios=1.0 descartado=3.53s
-   paso 3: dinamica+ayuda [opt]     4     7.220      2.72   0.68   0.156     2.95   ajuste=3 eval=1 reinicios=1.0 descartado=3.38s
-   paso 3: dinamica+ayuda [opt]     6     6.630      2.97   0.49   0.204     3.21   ajuste=5 eval=1 reinicios=1.0 descartado=2.67s
+   secuencial: total 20.100  (carga 0.238, ajuste 16.524 = 82 %, evaluacion final 3.338 = 17 %)
+   Amdahl: fraccion secuencial medida (carga replicada) f = 0.0118  ->  speed-up maximo teorico <= 84.4
+   version                    p     total  speed-up  efic.      KF   notas
+   paso 1: datos              1    19.909      1.01   1.01       -   comunicacion+espera=0.000s (0.0 % del total)
+   paso 1: datos              2    10.826      1.86   0.93   0.077   comunicacion+espera=0.199s (1.8 % del total)
+   paso 1: datos              3     7.575      2.65   0.88   0.065   comunicacion+espera=0.198s (2.6 % del total)
+   paso 1: datos              4     6.212      3.24   0.81   0.079   comunicacion+espera=0.387s (6.2 % del total)
+   paso 1: datos              6     5.057      3.97   0.66   0.102   comunicacion+espera=0.569s (11.3 % del total)
+   paso 2: especulativa       2    16.922      1.19   0.59   0.684   ajuste=1 eval=1 reinicios=1.0 descartado=3.68s
+   paso 2: especulativa       3     9.384      2.14   0.71   0.200   ajuste=2 eval=1 reinicios=1.0 descartado=3.80s
+   paso 2: especulativa       4     7.346      2.74   0.68   0.154   ajuste=3 eval=1 reinicios=1.0 descartado=3.47s
+   paso 2: especulativa       6     6.436      3.12   0.52   0.184   ajuste=5 eval=1 reinicios=1.0 descartado=2.47s
+   paso 3: dinamica+ayuda     2    12.867      1.56   0.78   0.280   ajuste=1 eval=1 reinicios=1.0 descartado=3.66s
+   paso 3: dinamica+ayuda     3     9.007      2.23   0.74   0.172   ajuste=2 eval=1 reinicios=1.0 descartado=3.74s
+   paso 3: dinamica+ayuda     4     7.709      2.61   0.65   0.178   ajuste=3 eval=1 reinicios=1.0 descartado=3.74s
+   paso 3: dinamica+ayuda     6     6.663      3.02   0.50   0.198   ajuste=5 eval=1 reinicios=1.0 descartado=2.67s
 
 === N = 8000  (test = 4000, entrenamiento final = 24000)
-   secuencial [orig]: total 81.171  (carga 0.217, ajuste 67.631 = 83 %, evaluacion final 13.323 = 16 %)
-      Amdahl: fraccion secuencial medida (carga replicada) f = 0.0027  ->  speed-up maximo teorico <= 373.9
-   secuencial [opt]: total 79.824  (carga 0.223, ajuste 65.747 = 82 %, evaluacion final 13.854 = 17 %)
-      Amdahl: fraccion secuencial medida (carga replicada) f = 0.0028  ->  speed-up maximo teorico <= 357.8
-   efecto de las limpiezas en el secuencial: 81.171 s -> 79.824 s (x1.017)
-   version                          p     total  speed-up  efic.      KF  vs orig   notas
-   paso 1: datos [opt]              1    80.981      0.99   0.99       -     1.00   comunicacion+espera=0.000s (0.0 % del total)
-   paso 1: datos [opt]              2    41.793      1.91   0.95   0.047     1.94   comunicacion+espera=0.784s (1.9 % del total)
-   paso 1: datos [opt]              3    29.313      2.72   0.91   0.051     2.77   comunicacion+espera=1.364s (4.7 % del total)
-   paso 1: datos [opt]              4    24.081      3.31   0.83   0.069     3.37   comunicacion+espera=1.458s (6.1 % del total)
-   paso 1: datos [opt]              6    19.444      4.11   0.68   0.092     4.17   comunicacion+espera=1.728s (8.9 % del total)
-   paso 2: especulativa [opt]       2    64.279      1.24   0.62   0.611     1.26   ajuste=1 eval=1 reinicios=1.0 descartado=13.48s
-   paso 2: especulativa [opt]       3    35.093      2.27   0.76   0.159     2.31   ajuste=2 eval=1 reinicios=1.0 descartado=11.42s
-   paso 2: especulativa [opt]       4    26.239      3.04   0.76   0.105     3.09   ajuste=3 eval=1 reinicios=1.0 descartado=7.72s
-   paso 2: especulativa [opt]       6    22.200      3.60   0.60   0.134     3.66   ajuste=5 eval=1 reinicios=1.0 descartado=5.69s
-   paso 3: dinamica+ayuda [opt]     2    46.970      1.70   0.85   0.177     1.73   ajuste=1 eval=1 reinicios=1.0 descartado=13.43s
-   paso 3: dinamica+ayuda [opt]     3    32.950      2.42   0.81   0.119     2.46   ajuste=2 eval=1 reinicios=1.0 descartado=11.45s
-   paso 3: dinamica+ayuda [opt]     4    26.945      2.96   0.74   0.117     3.01   ajuste=3 eval=1 reinicios=1.0 descartado=8.37s
-   paso 3: dinamica+ayuda [opt]     6    22.432      3.56   0.59   0.137     3.62   ajuste=5 eval=1 reinicios=1.0 descartado=5.90s
+   secuencial: total 77.435  (carga 0.222, ajuste 63.928 = 83 %, evaluacion final 13.284 = 17 %)
+   Amdahl: fraccion secuencial medida (carga replicada) f = 0.0029  ->  speed-up maximo teorico <= 348.4
+   version                    p     total  speed-up  efic.      KF   notas
+   paso 1: datos              1    76.765      1.01   1.01       -   comunicacion+espera=0.000s (0.0 % del total)
+   paso 1: datos              2    42.735      1.81   0.91   0.104   comunicacion+espera=0.716s (1.7 % del total)
+   paso 1: datos              3    30.702      2.52   0.84   0.095   comunicacion+espera=2.091s (6.8 % del total)
+   paso 1: datos              4    25.133      3.08   0.77   0.099   comunicacion+espera=1.417s (5.6 % del total)
+   paso 1: datos              6    20.622      3.75   0.63   0.120   comunicacion+espera=2.163s (10.5 % del total)
+   paso 2: especulativa       2    66.779      1.16   0.58   0.725   ajuste=1 eval=1 reinicios=1.0 descartado=14.52s
+   paso 2: especulativa       3    36.664      2.11   0.70   0.210   ajuste=2 eval=1 reinicios=1.0 descartado=12.00s
+   paso 2: especulativa       4    26.683      2.90   0.73   0.126   ajuste=3 eval=1 reinicios=1.0 descartado=8.27s
+   paso 2: especulativa       6    24.723      3.13   0.52   0.183   ajuste=5 eval=1 reinicios=1.0 descartado=6.76s
+   paso 3: dinamica+ayuda     2    50.079      1.55   0.77   0.293   ajuste=1 eval=1 reinicios=1.0 descartado=14.33s
+   paso 3: dinamica+ayuda     3    35.014      2.21   0.74   0.178   ajuste=2 eval=1 reinicios=1.0 descartado=12.08s
+   paso 3: dinamica+ayuda     4    27.042      2.86   0.72   0.132   ajuste=3 eval=1 reinicios=1.0 descartado=8.30s
+   paso 3: dinamica+ayuda     6    25.210      3.07   0.51   0.191   ajuste=5 eval=1 reinicios=1.0 descartado=6.62s
 
 COMPROBACION DE CONSISTENCIA (mejor K y accuracy de test, por tamano; deben ser iguales en TODAS las versiones)
    N=2000: OK  ('4', '0.938000')

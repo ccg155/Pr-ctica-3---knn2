@@ -43,10 +43,6 @@
 #include <string>
 #include <vector>
 
-#ifndef FLAVOR
-#define FLAVOR "" // run_all.sh compila la variante con la biblioteca limpia con -DFLAVOR='"_opt"'
-#endif
-
 using namespace knn;
 using namespace mnist;
 
@@ -109,6 +105,9 @@ int main(int argc, char **argv)
     MPI_Init(&argc, &argv);
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank); // identificador de este proceso: 0 .. size-1
+    // Para gprof (binarios compilados con -pg): cada proceso escribe su propio fichero gmon_rank<N>.<pid>
+    // en vez de pisarse todos en gmon.out. En los binarios normales esta variable no se usa.
+    { char gp[32]; std::snprintf(gp, sizeof gp, "gmon_rank%d", rank); setenv("GMON_OUT_PREFIX", gp, 1); }
     MPI_Comm_size(MPI_COMM_WORLD, &size); // número total de procesos
 
     // ---- Parámetros del problema (por defecto, los de main.cc) -------------
@@ -257,7 +256,7 @@ int main(int argc, char **argv)
         // version,np,tuning,test,final_train,max_k,folds,best_k,test_acc,total_s,
         // load_s,tune_s,final_s,comm_s,nT,nE,restarts,wasted_s   (nT..wasted_s no aplican aqui)
         char csv[512];
-        std::snprintf(csv, sizeof csv, "CSV,knn_mpi" FLAVOR ",%d,%zu,%zu,%zu,%u,%u,%u,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,,,,",
+        std::snprintf(csv, sizeof csv, "CSV,knn_mpi,%d,%zu,%zu,%zu,%u,%u,%u,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,,,,",
                       size, nTuning, nTest, nFinalTrain, maxK, folds, bestK, totalMatches / (double)nTest,
                       worst[5], worst[0], worst[1], worst[3], worst[2] + worst[4]);
         std::cout << csv << std::endl;

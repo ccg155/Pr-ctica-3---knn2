@@ -1,7 +1,7 @@
 # Un proceso por linea (np=6): nodo, directorio de trabajo, archivos de train/test y si existe el binario
-Ubu cwd=/home/alu/Escritorio/Práctica 3 - knn2/knn2/build train=2 test=2 knn_mpi_opt=si
-Ubu cwd=/home/alu/Escritorio/Práctica 3 - knn2/knn2/build train=2 test=2 knn_mpi_opt=si
-Ubu cwd=/home/alu/Escritorio/Práctica 3 - knn2/knn2/build train=2 test=2 knn_mpi_opt=si
-Ubu cwd=/home/alu/Escritorio/Práctica 3 - knn2/knn2/build train=2 test=2 knn_mpi_opt=si
-Ubu cwd=/home/alu/Escritorio/Práctica 3 - knn2/knn2/build train=2 test=2 knn_mpi_opt=si
-Ubu cwd=/home/alu/Escritorio/Práctica 3 - knn2/knn2/build train=2 test=2 knn_mpi_opt=si
+Ubu cwd=/home/alu/Escritorio/Práctica 3 - knn2/knn2/build train=2 test=2 knn_mpi=si
+Ubu cwd=/home/alu/Escritorio/Práctica 3 - knn2/knn2/build train=2 test=2 knn_mpi=si
+Ubu cwd=/home/alu/Escritorio/Práctica 3 - knn2/knn2/build train=2 test=2 knn_mpi=si
+Ubu cwd=/home/alu/Escritorio/Práctica 3 - knn2/knn2/build train=2 test=2 knn_mpi=si
+Ubu cwd=/home/alu/Escritorio/Práctica 3 - knn2/knn2/build train=2 test=2 knn_mpi=si
+Ubu cwd=/home/alu/Escritorio/Práctica 3 - knn2/knn2/build train=2 test=2 knn_mpi=si

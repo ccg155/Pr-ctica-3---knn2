@@ -1,16 +1,19 @@
 Contenido de la carpeta de resultados (lo genera run_all.sh)
-  arquitectura.txt     procesador, nucleos, caches y memoria (de esta maquina y de cada nodo)  -> memoria
+  arquitectura.txt     procesador, nucleos, caches, memoria y red (de esta maquina y de cada nodo)  -> memoria
   compilacion.log      ordenes de compilacion y avisos
   nodos.txt            en que nodos arrancan los procesos y si tienen binarios y dataset
-  verificacion.txt     todas las versiones dan exactamente lo mismo que el secuencial?
-  gprof/               perfil_<sabor>_<O>.txt (informes gprof), resumen_gprof.txt, salida_*.txt, gmon_*.out
-                       sabor: orig = codigo del profesor, opt = con las limpiezas de la Tarea 0
+  verificacion.txt     las versiones MPI dan exactamente lo mismo que el secuencial?
+  gprof/               perfiles gprof (-O2) del secuencial y de cada version MPI:
+                         perfil_seq_<O>.txt                  secuencial: perfil plano + grafo de llamadas
+                         perfil_<version>_<O>_total.txt      todos los procesos sumados (perfil plano + grafo de llamadas)
+                         perfil_<version>_<O>_procesos.txt   perfil plano de cada proceso (rango) por separado
+                         resumen_gprof.txt                   CPU de cada proceso y funciones mas costosas
+                         salida_*.txt, gmon_*                salida del programa y datos en bruto de gprof
   resultados.csv       una fila por ejecucion (version, rep, np, tamanos, K, accuracy, tiempos, ...)
   logs/                la salida completa de cada ejecucion
-  resumen.txt          speed-up, eficiencia, Karp-Flatt, comunicacion, cota de Amdahl, efecto de limpiezas
+  resumen.txt          speed-up, eficiencia, Karp-Flatt, comunicacion, cota de Amdahl, consistencia
   speedup.png eficiencia.png tiempos_knn_mpi.png tiempos_versiones.png
-  tarea0/              resumen_tarea0.txt (vector y matriz), cambios_tarea0.txt (que se cambio en la biblioteca)
   grafos/              grafos de flujo: secuencial, paso 1, pasos 2-3 (.dot, .png, .svg)
-Versiones (columna "version" del CSV; sufijo _opt = con limpiezas):
-  knn_seq        secuencial                           knn_mpi_spec   paso 2: funcional + especulativa (estatica)
+Versiones (columna "version" del CSV):
+  knn_seq        secuencial (referencia)              knn_mpi_spec   paso 2: funcional + especulativa (estatica)
   knn_mpi        paso 1: paralelismo de datos         knn_mpi_dyn    paso 3: cola dinamica + ayuda de evaluadores

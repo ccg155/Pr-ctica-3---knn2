@@ -1,5 +1,5 @@
 // =============================================================================
-// knn_mpi_spec.cpp  -  PASO 2: paralelismo FUNCIONAL + ejecucion ESPECULATIVA
+// knn_mpi_spec.cpp  -  PASOS 2 y 3: paralelismo FUNCIONAL + ejecucion ESPECULATIVA
 //
 // Secuencial:  ajuste de K (validacion cruzada)  ->  elegir K  ->  evaluacion final.
 // La evaluacion final depende del K que salga del ajuste. Aqui se rompe esa
@@ -9,9 +9,8 @@
 // Dos grupos de procesos (MPI_Comm_split) que trabajan A LA VEZ:
 //
 //   GRUPO DE AJUSTE (rangos 0 .. nT-1)
-//     Se reparten las 50 tareas (k, fold) igual que en el paso 1, pero NO hay
-//     Allreduce: cada proceso envia el resultado de cada tarea, segun la acaba,
-//     al LIDER del grupo de evaluacion (MPI_Isend, tag TAG_RESULT).
+//     Calcula las tareas (k, fold) y envia el resultado de cada una, segun la
+//     acaba, al LIDER del grupo de evaluacion (MPI_Isend, tag TAG_RESULT).
 //
 //   GRUPO DE EVALUACION (rangos nT .. size-1; el lider es el rango nT)
 //     Cada proceso clasifica su bloque de muestras de test con el mejor K
@@ -26,6 +25,16 @@
 //     evaluacion termina cuando el bloque se ha clasificado con ese K.
 //     Al final MPI_Reduce (en el comunicador del grupo) suma los aciertos.
 //
+// MODO (ultimo argumento)
+//   0 = ESTATICO (paso 2): las tareas de ajuste se reparten de forma ciclica al
+//       empezar y los procesos de evaluacion solo evaluan (y esperan).
+//   1 = DINAMICO (paso 3): el lider tiene una cola de tareas de ajuste y las
+//       reparte BAJO DEMANDA (TAG_REQ -> TAG_TASK). Asi el ajuste se equilibra
+//       solo (no importa que P no divida a 50) y, ademas, los procesos de
+//       evaluacion que terminan su bloque y esperan AYUDAN con tareas de ajuste
+//       en vez de quedarse parados. Una tarea de ayuda se termina antes de
+//       atender un cambio de K (para no desperdiciarla).
+//
 // La eleccion de K es DETERMINISTA (mayor accuracy; en empate, el K menor), asi
 // que el resultado final es identico al secuencial aunque los resultados lleguen
 // desordenados.
@@ -37,8 +46,8 @@
 // Ejecutar (desde build/):  mpirun -np 4 ./knn_mpi_spec     (minimo 2 procesos)
 // Parametros opcionales:
 //   mpirun -np 4 ./knn_mpi_spec [maxK] [folds] [muestras_ajuste] [muestras_test]
-//                               [entrenamiento_final] [procesos_evaluacion] [k_inicial]
-//   por defecto: 10 5 20000 todas todas 0(=automatico) 1
+//                               [entrenamiento_final] [procesos_evaluacion] [k_inicial] [modo]
+//   por defecto: 10 5 20000 todas todas 0(=automatico) 1 0
 // =============================================================================
 
 #include <mpi.h>
@@ -52,8 +61,10 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <deque>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -68,8 +79,10 @@ using namespace mnist;
 namespace
 {
 
-const int TAG_RESULT = 1; // ajuste -> lider de evaluacion: {numero de tarea, accuracy}
-const int TAG_BEST = 2;   // lider de evaluacion -> resto de evaluacion: {K, es_definitivo}
+const int TAG_RESULT = 1; // cualquiera -> lider: {numero de tarea, accuracy}
+const int TAG_BEST = 2;   // lider -> resto de evaluacion: {K, es_definitivo}
+const int TAG_REQ = 3;    // (dinamico) peticion de tarea: cualquiera -> lider
+const int TAG_TASK = 4;   // (dinamico) respuesta del lider: {numero de tarea | -1 si no quedan}
 const int CHUNK = 25;     // muestras que se clasifican entre dos consultas de mensajes
 
 [[noreturn]] void abortAll(int rank, const std::string &msg)
@@ -97,8 +110,11 @@ long long countMatches(const KNN &knn, const std::vector<TSample> &samples,
     return matches;
 }
 
-// Igual que en el paso 1: misma particion que CrossValidation::splitDataset.
-double evaluateFold(const std::vector<TSample> &data, unsigned folds, unsigned fold, int k)
+// Accuracy del KNN con 'k' vecinos usando el fold 'fold' como validacion. Misma
+// particion que CrossValidation::splitDataset del codigo secuencial. Si se pasa
+// 'poll', se llama cada CHUNK muestras (para atender mensajes mientras se trabaja).
+double evaluateFold(const std::vector<TSample> &data, unsigned folds, unsigned fold, int k,
+                    const std::function<void()> &poll = nullptr)
 {
     const std::size_t start = data.size() * fold / folds;
     const std::size_t end = data.size() * (fold + 1) / folds;
@@ -109,7 +125,15 @@ double evaluateFold(const std::vector<TSample> &data, unsigned folds, unsigned f
     train.insert(train.end(), data.begin() + end, data.end());
 
     KNN knn(train, k);
-    return countMatches(knn, data, start, end) / (double)(end - start);
+    long long matches = 0;
+    for (std::size_t i = start; i < end;)
+    {
+        const std::size_t chunkEnd = std::min(i + static_cast<std::size_t>(CHUNK), end);
+        matches += countMatches(knn, data, i, chunkEnd);
+        i = chunkEnd;
+        if (poll) poll();
+    }
+    return matches / (double)(end - start);
 }
 
 // Barrera que NO consume CPU mientras espera. Un MPI_Barrier normal "gira" al
@@ -184,19 +208,21 @@ struct TimelineEntry
 
 struct EvalStats
 {
-    int restarts = 0;     // veces que se descarto el trabajo por llegar un K distinto
-    double compute = 0.0; // segundos clasificando (incluye el trabajo descartado)
-    double wasted = 0.0;  // segundos de trabajo descartado
-    double wait = 0.0;    // segundos esperando a que termine el ajuste
+    int restarts = 0;       // veces que se descarto el trabajo por llegar un K distinto
+    double compute = 0.0;   // segundos clasificando test (incluye el trabajo descartado)
+    double wasted = 0.0;    // segundos de trabajo descartado
+    double wait = 0.0;      // segundos esperando a que termine el ajuste
+    int helpTasks = 0;      // (dinamico) tareas de ajuste hechas por este proceso de evaluacion
+    double helpCompute = 0.0;
     std::vector<TimelineEntry> timeline; // solo el lider
 };
 
 // -----------------------------------------------------------------------------
-// GRUPO DE AJUSTE: calcula sus tareas y envia cada resultado al lider.
-// Devuelve los segundos de calculo.
+// GRUPO DE AJUSTE, modo estatico: tareas repartidas ciclicamente de antemano.
+// Devuelve los segundos de calculo y, en 'done', cuantas tareas ha hecho.
 // -----------------------------------------------------------------------------
-double runTuning(const std::vector<TSample> &tuning, unsigned folds, int minK, int numTasks,
-                 int myIndex, int nT, int leaderRank)
+double runTuningStatic(const std::vector<TSample> &tuning, unsigned folds, int minK, int numTasks,
+                       int myIndex, int nT, int leaderRank, int &done)
 {
     std::vector<int> tasks;
     for (int task = myIndex; task < numTasks; task += nT) // reparto ciclico
@@ -218,42 +244,209 @@ double runTuning(const std::vector<TSample> &tuning, unsigned folds, int minK, i
         MPI_Isend(msgs[idx].data(), 2, MPI_DOUBLE, leaderRank, TAG_RESULT, MPI_COMM_WORLD, &reqs[idx]);
     }
     MPI_Waitall(static_cast<int>(reqs.size()), reqs.data(), MPI_STATUSES_IGNORE);
+    done = static_cast<int>(tasks.size());
+    return compute;
+}
+
+// -----------------------------------------------------------------------------
+// GRUPO DE AJUSTE, modo dinamico: pide tareas al lider hasta que le contesta -1.
+// -----------------------------------------------------------------------------
+double runTuningDynamic(const std::vector<TSample> &tuning, unsigned folds, int minK,
+                        int leaderRank, int &done)
+{
+    std::deque<std::array<double, 2>> msgs;
+    std::vector<MPI_Request> reqs;
+    double compute = 0.0;
+    done = 0;
+
+    for (;;)
+    {
+        int dummy = 0;
+        MPI_Send(&dummy, 1, MPI_INT, leaderRank, TAG_REQ, MPI_COMM_WORLD);
+
+        // Espera la respuesta durmiendo (el lider tarda a lo sumo unas decimas en atender).
+        int task = -1, flag = 0;
+        for (;;)
+        {
+            MPI_Iprobe(leaderRank, TAG_TASK, MPI_COMM_WORLD, &flag, MPI_STATUS_IGNORE);
+            if (flag) break;
+            usleep(1000);
+        }
+        MPI_Recv(&task, 1, MPI_INT, leaderRank, TAG_TASK, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        if (task < 0)
+            break; // no quedan tareas
+
+        const double t0 = MPI_Wtime();
+        const double acc = evaluateFold(tuning, folds, task % folds, minK + task / folds);
+        compute += MPI_Wtime() - t0;
+        done++;
+
+        msgs.push_back({static_cast<double>(task), acc});
+        reqs.emplace_back();
+        MPI_Isend(msgs.back().data(), 2, MPI_DOUBLE, leaderRank, TAG_RESULT, MPI_COMM_WORLD, &reqs.back());
+    }
+    MPI_Waitall(static_cast<int>(reqs.size()), reqs.data(), MPI_STATUSES_IGNORE);
     return compute;
 }
 
 // -----------------------------------------------------------------------------
 // GRUPO DE EVALUACION: clasifica begin..end con el mejor K conocido y reinicia
-// si cambia. Devuelve los aciertos del bloque con el K definitivo (en finalK).
+// si cambia. En modo dinamico, ayuda con el ajuste cuando se queda sin trabajo.
 // -----------------------------------------------------------------------------
-long long speculativeEvaluation(const std::vector<TSample> &train, const std::vector<TSample> &test,
-                                std::size_t begin, std::size_t end, int k0, int leaderRank,
-                                bool isLeader, const std::vector<int> &evalWorkers,
-                                BestKTracker *tracker, double tStart, EvalStats &stats, int &finalK)
+class Evaluator
 {
-    int kWanted = k0;        // el K que ahora mismo se cree el mejor
-    bool finalKnown = false; // true cuando el ajuste ha terminado y kWanted es el definitivo
-
-    // Solo el lider: envios de avisos al resto del grupo.
-    std::deque<std::array<int, 2>> outBuf; // deque: las referencias no se invalidan al crecer
-    std::vector<MPI_Request> outReq;
-    auto announce = [&](int k, bool fin)
+public:
+    struct Config
     {
-        for (int w : evalWorkers)
-        {
-            outBuf.push_back({k, fin ? 1 : 0});
-            outReq.emplace_back();
-            MPI_Isend(outBuf.back().data(), 2, MPI_INT, w, TAG_BEST, MPI_COMM_WORLD, &outReq.back());
-        }
+        const std::vector<TSample> *train = nullptr;  // entrenamiento de la evaluacion final
+        const std::vector<TSample> *test = nullptr;
+        const std::vector<TSample> *tuning = nullptr; // datos del ajuste (solo para ayudar)
+        std::size_t begin = 0, end = 0;               // bloque de test de este proceso
+        int k0 = 1;                                   // K inicial supuesto
+        int leaderRank = 0;
+        bool isLeader = false;
+        std::vector<int> workers;                     // resto del grupo (solo lo usa el lider)
+        BestKTracker *tracker = nullptr;              // solo el lider
+        double tStart = 0.0;
+        bool dynamic = false;
+        unsigned folds = 5;
+        int minK = 1;
+        int numTasks = 0;
     };
 
+    Evaluator(const Config &c, EvalStats &stats) : c_(c), stats_(stats), kWanted_(c.k0) {}
+
+    // Devuelve los aciertos del bloque con el K definitivo (en finalK).
+    long long run(int &finalK)
+    {
+        int kUsed = -1;          // K con el que se esta clasificando de verdad
+        long long matches = 0;
+        std::size_t i = c_.begin;
+        double workThisK = 0.0;  // trabajo hecho con kUsed (se pierde si hay que reiniciar)
+        std::unique_ptr<KNN> knn;
+        bool canHelp = c_.dynamic;
+
+        for (;;)
+        {
+            if (kUsed != kWanted_) // (re)inicio: o es la primera vez, o ha llegado un K distinto
+            {
+                if (kUsed != -1)
+                {
+                    stats_.restarts++;
+                    stats_.wasted += workThisK; // lo hecho con el K anterior se descarta
+                }
+                const double t0 = MPI_Wtime();
+                kUsed = kWanted_;
+                knn.reset(new KNN(*c_.train, kUsed));
+                matches = 0;
+                i = c_.begin;
+                workThisK = MPI_Wtime() - t0;
+                stats_.compute += workThisK;
+            }
+
+            if (i < c_.end) // quedan muestras: un trozo de CHUNK y luego miro mensajes
+            {
+                const double t0 = MPI_Wtime();
+                const std::size_t chunkEnd = std::min(i + static_cast<std::size_t>(CHUNK), c_.end);
+                matches += countMatches(*knn, *c_.test, i, chunkEnd);
+                i = chunkEnd;
+                const double dt = MPI_Wtime() - t0;
+                workThisK += dt;
+                stats_.compute += dt;
+                poll();
+                continue;
+            }
+
+            // Bloque terminado con kUsed.
+            if (finalKnown_ && kWanted_ == kUsed)
+                break; // el K usado es el definitivo: hecho
+
+            // Aun puede cambiar el K. Modo dinamico: en vez de esperar, ayudo con el ajuste.
+            if (canHelp)
+            {
+                const int task = fetchTask();
+                if (task >= 0)
+                {
+                    helpWith(task);
+                    continue; // puede haber cambiado el K mientras ayudaba
+                }
+                canHelp = false; // no quedan tareas
+            }
+
+            // Espero mensajes sin ocupar CPU.
+            const double t0 = MPI_Wtime();
+            while (kWanted_ == kUsed && !finalKnown_)
+            {
+                if (!poll())
+                    usleep(1000);
+            }
+            stats_.wait += MPI_Wtime() - t0;
+        }
+
+        MPI_Waitall(static_cast<int>(outReq_.size()), outReq_.data(), MPI_STATUSES_IGNORE);
+        finalK = kUsed;
+        return matches;
+    }
+
+    // Barrera final. El lider sigue atendiendo peticiones de tarea mientras espera:
+    // asi nadie se queda esperando una respuesta que no llega.
+    void finalBarrier(bool serve)
+    {
+        if (!serve)
+        {
+            sleepyBarrier(MPI_COMM_WORLD);
+            return;
+        }
+        MPI_Request req;
+        MPI_Ibarrier(MPI_COMM_WORLD, &req);
+        int done = 0;
+        while (!done)
+        {
+            MPI_Test(&req, &done, MPI_STATUS_IGNORE);
+            if (!done && !poll())
+                usleep(1000);
+        }
+    }
+
+private:
+    // Envia el aviso (K, definitivo?) a todo el grupo de evaluacion (solo el lider).
+    void announce(int k, bool fin)
+    {
+        for (int w : c_.workers)
+        {
+            outBuf_.push_back({k, fin ? 1 : 0});
+            outReq_.emplace_back();
+            MPI_Isend(outBuf_.back().data(), 2, MPI_INT, w, TAG_BEST, MPI_COMM_WORLD, &outReq_.back());
+        }
+    }
+
+    // El lider registra un resultado de ajuste (llegado por mensaje o calculado por el).
+    void onResult(int task, double accuracy)
+    {
+        const bool changed = c_.tracker->add(task, accuracy);
+        if (c_.tracker->complete())
+        {
+            kWanted_ = c_.tracker->bestK();
+            finalKnown_ = true;
+            stats_.timeline.push_back({MPI_Wtime() - c_.tStart, kWanted_, true});
+            announce(kWanted_, true);
+        }
+        else if (changed)
+        {
+            kWanted_ = c_.tracker->bestK();
+            stats_.timeline.push_back({MPI_Wtime() - c_.tStart, kWanted_, false});
+            announce(kWanted_, false);
+        }
+    }
+
     // Consulta mensajes sin bloquear. Devuelve true si ha procesado alguno.
-    auto poll = [&]() -> bool
+    bool poll()
     {
         bool got = false;
         int flag = 0;
-        if (isLeader)
+        if (c_.isLeader)
         {
-            for (;;)
+            for (;;) // resultados del ajuste
             {
                 MPI_Status st;
                 MPI_Iprobe(MPI_ANY_SOURCE, TAG_RESULT, MPI_COMM_WORLD, &flag, &st);
@@ -261,99 +454,96 @@ long long speculativeEvaluation(const std::vector<TSample> &train, const std::ve
                 double msg[2];
                 MPI_Recv(msg, 2, MPI_DOUBLE, st.MPI_SOURCE, TAG_RESULT, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 got = true;
-
-                const bool changed = tracker->add(static_cast<int>(msg[0]), msg[1]);
-                if (tracker->complete())
+                onResult(static_cast<int>(msg[0]), msg[1]);
+            }
+            if (c_.dynamic)
+            {
+                for (;;) // peticiones de tarea: SIEMPRE se contestan
                 {
-                    kWanted = tracker->bestK();
-                    finalKnown = true;
-                    stats.timeline.push_back({MPI_Wtime() - tStart, kWanted, true});
-                    announce(kWanted, true);
-                }
-                else if (changed)
-                {
-                    kWanted = tracker->bestK();
-                    stats.timeline.push_back({MPI_Wtime() - tStart, kWanted, false});
-                    announce(kWanted, false);
+                    MPI_Status st;
+                    MPI_Iprobe(MPI_ANY_SOURCE, TAG_REQ, MPI_COMM_WORLD, &flag, &st);
+                    if (!flag) break;
+                    int dummy;
+                    MPI_Recv(&dummy, 1, MPI_INT, st.MPI_SOURCE, TAG_REQ, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    got = true;
+                    int task = nextTask_ < c_.numTasks ? nextTask_++ : -1;
+                    MPI_Send(&task, 1, MPI_INT, st.MPI_SOURCE, TAG_TASK, MPI_COMM_WORLD);
                 }
             }
         }
         else
         {
-            for (;;)
+            for (;;) // avisos del lider
             {
-                MPI_Iprobe(leaderRank, TAG_BEST, MPI_COMM_WORLD, &flag, MPI_STATUS_IGNORE);
+                MPI_Iprobe(c_.leaderRank, TAG_BEST, MPI_COMM_WORLD, &flag, MPI_STATUS_IGNORE);
                 if (!flag) break;
                 int msg[2];
-                MPI_Recv(msg, 2, MPI_INT, leaderRank, TAG_BEST, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                MPI_Recv(msg, 2, MPI_INT, c_.leaderRank, TAG_BEST, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 got = true;
-                kWanted = msg[0];
-                finalKnown = (msg[1] != 0);
+                kWanted_ = msg[0];
+                finalKnown_ = (msg[1] != 0);
             }
         }
         return got;
-    };
+    }
 
-    int kUsed = -1;          // K con el que se esta clasificando de verdad
-    long long matches = 0;
-    std::size_t i = begin;
-    double workThisK = 0.0;  // trabajo hecho con kUsed (se pierde si hay que reiniciar)
-    std::unique_ptr<KNN> knn;
-
-    for (;;)
+    // Modo dinamico: obtiene una tarea de ajuste (-1 si no quedan).
+    int fetchTask()
     {
-        if (kUsed != kWanted) // (re)inicio: o es la primera vez, o ha llegado un K distinto
+        if (c_.isLeader)
+            return nextTask_ < c_.numTasks ? nextTask_++ : -1;
+
+        int dummy = 0;
+        MPI_Send(&dummy, 1, MPI_INT, c_.leaderRank, TAG_REQ, MPI_COMM_WORLD);
+        for (;;) // la respuesta SIEMPRE llega; mientras tanto sigo atendiendo avisos de K
         {
-            if (kUsed != -1)
+            int flag = 0;
+            MPI_Iprobe(c_.leaderRank, TAG_TASK, MPI_COMM_WORLD, &flag, MPI_STATUS_IGNORE);
+            if (flag)
             {
-                stats.restarts++;
-                stats.wasted += workThisK; // lo hecho con el K anterior se descarta
+                int task;
+                MPI_Recv(&task, 1, MPI_INT, c_.leaderRank, TAG_TASK, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                return task;
             }
-            const double t0 = MPI_Wtime();
-            kUsed = kWanted;
-            knn.reset(new KNN(train, kUsed));
-            matches = 0;
-            i = begin;
-            workThisK = MPI_Wtime() - t0;
-            stats.compute += workThisK;
-        }
-
-        if (i < end) // quedan muestras: un trozo de CHUNK y luego miro mensajes
-        {
-            const double t0 = MPI_Wtime();
-            const std::size_t chunkEnd = std::min(i + static_cast<std::size_t>(CHUNK), end);
-            for (; i < chunkEnd; i++)
-            {
-                if (knn->classify(test[i]) == test[i].label)
-                    matches++;
-            }
-            const double dt = MPI_Wtime() - t0;
-            workThisK += dt;
-            stats.compute += dt;
-            poll();
-            continue;
-        }
-
-        // Bloque terminado con kUsed.
-        if (finalKnown && kWanted == kUsed)
-            break; // el K usado es el definitivo: hecho
-
-        // Aun puede cambiar el K: espero mensajes sin ocupar CPU.
-        const double t0 = MPI_Wtime();
-        while (kWanted == kUsed && !finalKnown)
-        {
             if (!poll())
                 usleep(1000);
         }
-        stats.wait += MPI_Wtime() - t0;
     }
 
-    if (isLeader)
-        MPI_Waitall(static_cast<int>(outReq.size()), outReq.data(), MPI_STATUSES_IGNORE);
+    // Calcula una tarea de ajuste y entrega el resultado al lider (atendiendo mensajes mientras tanto).
+    void helpWith(int task)
+    {
+        const double t0 = MPI_Wtime();
+        const double acc = evaluateFold(*c_.tuning, c_.folds, task % c_.folds, c_.minK + task / c_.folds,
+                                        [this]() { poll(); });
+        stats_.helpCompute += MPI_Wtime() - t0;
+        stats_.helpTasks++;
 
-    finalK = kUsed;
-    return matches;
-}
+        if (c_.isLeader)
+        {
+            onResult(task, acc);
+        }
+        else
+        {
+            outRes_.push_back({static_cast<double>(task), acc});
+            outReq_.emplace_back();
+            MPI_Isend(outRes_.back().data(), 2, MPI_DOUBLE, c_.leaderRank, TAG_RESULT, MPI_COMM_WORLD,
+                      &outReq_.back());
+        }
+    }
+
+    Config c_;
+    EvalStats &stats_;
+    int kWanted_;            // el K que ahora mismo se cree el mejor
+    bool finalKnown_ = false; // true cuando el ajuste ha terminado y kWanted_ es el definitivo
+    int nextTask_ = 0;       // (lider, dinamico) siguiente tarea de ajuste por repartir
+
+    std::deque<std::array<int, 2>> outBuf_;      // buffers de envios: deben seguir vivos hasta el Waitall
+    std::deque<std::array<double, 2>> outRes_;
+    std::vector<MPI_Request> outReq_;
+};
+
+const int NFIELDS = 9; // campos de metricas por proceso (ver main)
 
 } // namespace
 
@@ -362,6 +552,9 @@ int main(int argc, char **argv)
     MPI_Init(&argc, &argv);
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    // Para gprof (binarios compilados con -pg): cada proceso escribe su propio fichero gmon_rank<N>.<pid>
+    // en vez de pisarse todos en gmon.out. En los binarios normales esta variable no se usa.
+    { char gp[32]; std::snprintf(gp, sizeof gp, "gmon_rank%d", rank); setenv("GMON_OUT_PREFIX", gp, 1); }
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     if (size < 2)
@@ -375,6 +568,7 @@ int main(int argc, char **argv)
     std::size_t finalTrainSamples = std::numeric_limits<std::size_t>::max();
     int evalProcs = 0;       // 0 = automatico
     unsigned initialK = minK;
+    unsigned mode = 0;       // 0 = estatico (paso 2), 1 = dinamico (paso 3)
     try
     {
         if (argc > 1) maxK = std::stoul(argv[1]);
@@ -384,16 +578,20 @@ int main(int argc, char **argv)
         if (argc > 5) finalTrainSamples = std::stoul(argv[5]);
         if (argc > 6) evalProcs = std::stoi(argv[6]);
         if (argc > 7) initialK = std::stoul(argv[7]);
+        if (argc > 8) mode = std::stoul(argv[8]);
     }
     catch (const std::exception &)
     {
         abortAll(rank, "Uso: knn_mpi_spec [maxK] [folds] [muestras_ajuste] [muestras_test] "
-                       "[entrenamiento_final] [procesos_evaluacion] [k_inicial]");
+                       "[entrenamiento_final] [procesos_evaluacion] [k_inicial] [modo 0|1]");
     }
     if (maxK <= minK || folds < 2)
         abortAll(rank, "Se necesita maxK > 1 y folds >= 2");
     if (initialK < minK || initialK > maxK)
         abortAll(rank, "k_inicial debe estar entre 1 y maxK");
+    if (mode > 1)
+        abortAll(rank, "modo debe ser 0 (estatico) o 1 (dinamico)");
+    const bool dynamic = (mode == 1);
 
     sleepyBarrier(MPI_COMM_WORLD);
     const double tStart = MPI_Wtime();
@@ -441,57 +639,84 @@ int main(int argc, char **argv)
 
     // ---- Cada proceso hace lo suyo -------------------------------------------
     EvalStats stats;
-    double tuneCompute = 0.0;
-    long long totalMatches = 0;
+    double tuneCompute = 0.0; // segundos en tareas de ajuste (grupo de ajuste)
+    int tuneTasks = 0;
+    long long matches = 0;
     int finalK = -1;
     std::unique_ptr<BestKTracker> tracker;
+    std::unique_ptr<Evaluator> evaluator;
 
     if (!isEval)
     {
-        tuneCompute = runTuning(tuning, folds, minK, numTasks, rank, nT, leaderRank);
+        tuneCompute = dynamic ? runTuningDynamic(tuning, folds, minK, leaderRank, tuneTasks)
+                              : runTuningStatic(tuning, folds, minK, numTasks, rank, nT, leaderRank, tuneTasks);
     }
     else
     {
         const int er = rank - nT; // indice dentro del grupo de evaluacion
-        const std::size_t begin = nTest * static_cast<std::size_t>(er) / nE;
-        const std::size_t end = nTest * static_cast<std::size_t>(er + 1) / nE;
 
-        std::vector<int> workers; // rangos del resto del grupo (solo los usa el lider)
+        Evaluator::Config cfg;
+        cfg.train = finalTrain;
+        cfg.test = &test;
+        cfg.tuning = &tuning;
+        cfg.begin = nTest * static_cast<std::size_t>(er) / nE;
+        cfg.end = nTest * static_cast<std::size_t>(er + 1) / nE;
+        cfg.k0 = initialK;
+        cfg.leaderRank = leaderRank;
+        cfg.isLeader = isLeader;
+        cfg.tStart = tStart;
+        cfg.dynamic = dynamic;
+        cfg.folds = folds;
+        cfg.minK = minK;
+        cfg.numTasks = numTasks;
         if (isLeader)
         {
             tracker.reset(new BestKTracker(minK, numK, folds));
+            cfg.tracker = tracker.get();
             for (int r = nT + 1; r < size; r++)
-                workers.push_back(r);
+                cfg.workers.push_back(r);
         }
 
-        const long long matches = speculativeEvaluation(*finalTrain, test, begin, end, initialK, leaderRank,
-                                                        isLeader, workers, tracker.get(), tStart, stats, finalK);
-        MPI_Reduce(&matches, &totalMatches, 1, MPI_LONG_LONG, MPI_SUM, 0, groupComm); // 0 = lider
+        evaluator.reset(new Evaluator(cfg, stats));
+        matches = evaluator->run(finalK);
+        tuneCompute = stats.helpCompute;
+        tuneTasks = stats.helpTasks;
     }
     const double tDone = MPI_Wtime() - tStart; // cuando termina ESTE proceso su trabajo
 
-    sleepyBarrier(MPI_COMM_WORLD);
+    // Barrera final. Los procesos de evaluacion siguen atendiendo peticiones hasta que todos llegan.
+    if (isEval)
+        evaluator->finalBarrier(isLeader);
+    else
+        sleepyBarrier(MPI_COMM_WORLD);
+
+    long long totalMatches = 0;
+    if (isEval)
+        MPI_Reduce(&matches, &totalMatches, 1, MPI_LONG_LONG, MPI_SUM, 0, groupComm); // 0 = lider
 
     // ---- Recogida de metricas en el lider -----------------------------------
-    // {es_evaluacion, fin, calculo, espera, descartado, reinicios, carga}
-    const double mine[7] = {isEval ? 1.0 : 0.0, tDone, isEval ? stats.compute : tuneCompute,
-                            stats.wait, stats.wasted, static_cast<double>(stats.restarts), tLoad};
-    std::vector<double> all(7 * size);
-    MPI_Gather(mine, 7, MPI_DOUBLE, all.data(), 7, MPI_DOUBLE, leaderRank, MPI_COMM_WORLD);
+    // {es_evaluacion, fin, calculo_evaluacion, espera, descartado, reinicios, carga, tareas_ajuste, calculo_ajuste}
+    const double mine[NFIELDS] = {isEval ? 1.0 : 0.0, tDone, isEval ? stats.compute : 0.0, stats.wait,
+                                  stats.wasted, static_cast<double>(stats.restarts), tLoad,
+                                  static_cast<double>(tuneTasks), tuneCompute};
+    std::vector<double> all(NFIELDS * size);
+    MPI_Gather(mine, NFIELDS, MPI_DOUBLE, all.data(), NFIELDS, MPI_DOUBLE, leaderRank, MPI_COMM_WORLD);
 
     if (isLeader)
     {
-        double total = 0.0, maxLoad = 0.0;
+        double total = 0.0, maxLoad = 0.0, wastedSum = 0.0;
         for (int r = 0; r < size; r++)
         {
-            total = std::max(total, all[7 * r + 1]);
-            maxLoad = std::max(maxLoad, all[7 * r + 6]);
+            const double *v = &all[NFIELDS * r];
+            total = std::max(total, v[1]);
+            maxLoad = std::max(maxLoad, v[6]);
+            if (v[0] > 0.5) wastedSum += v[4];
         }
 
-        std::cout << "Procesos MPI: " << size << " (ajuste: " << nT << ", evaluacion: " << nE << ") | K en ["
-                  << minK << ", " << maxK << "], " << folds << " folds, " << nTuning << " muestras de ajuste, "
-                  << nTest << " de test, " << nFinalTrain << " de entrenamiento final, K inicial " << initialK
-                  << std::endl;
+        std::cout << "Procesos MPI: " << size << " (ajuste: " << nT << ", evaluacion: " << nE << ") | modo "
+                  << (dynamic ? "dinamico" : "estatico") << " | K en [" << minK << ", " << maxK << "], " << folds
+                  << " folds, " << nTuning << " muestras de ajuste, " << nTest << " de test, " << nFinalTrain
+                  << " de entrenamiento final, K inicial " << initialK << std::endl;
         // Mismo formato que el secuencial y el paso 1 (6 cifras significativas).
         for (int ki = 0; ki < numK; ki++)
             std::cout << "K: " << minK + ki << " Accuracy: " << tracker->accuracyOf(ki) * 100 << "%" << std::endl;
@@ -505,20 +730,38 @@ int main(int argc, char **argv)
             std::cout << "  t=" << e.t << "  " << (e.final ? "ajuste completo, K definitivo = " : "nuevo mejor K = ")
                       << e.k << std::endl;
         std::cout << "Reinicios de la evaluacion (lider): " << stats.restarts
-                  << ", trabajo descartado (lider): " << stats.wasted << " s" << std::endl;
+                  << ", trabajo descartado (suma de evaluadores): " << wastedSum << " s" << std::endl;
 
         std::cout << "Por proceso (segundos):" << std::endl;
         for (int r = 0; r < size; r++)
         {
-            const double *v = &all[7 * r];
+            const double *v = &all[NFIELDS * r];
             std::cout << "  proceso " << r << (v[0] > 0.5 ? " [evaluacion]" : " [ajuste]    ")
-                      << "  termina a t=" << v[1] << "  calculo=" << v[2];
+                      << "  termina a t=" << v[1];
             if (v[0] > 0.5)
-                std::cout << "  descartado=" << v[4] << "  espera=" << v[3] << "  reinicios=" << static_cast<int>(v[5]);
+            {
+                std::cout << "  evaluacion=" << v[2] << " (descartado=" << v[4] << ")  espera=" << v[3]
+                          << "  reinicios=" << static_cast<int>(v[5]);
+                if (dynamic)
+                    std::cout << "  ayuda al ajuste: " << static_cast<int>(v[7]) << " tareas, " << v[8] << " s";
+            }
+            else
+            {
+                std::cout << "  tareas=" << static_cast<int>(v[7]) << "  calculo=" << v[8];
+            }
             std::cout << std::endl;
         }
         std::cout << "Carga del dataset (replicada, maximo): " << maxLoad << std::endl;
         std::cout << "Total elapsed time " << total << " seconds" << std::endl;
+
+        // Linea legible por maquina (la recoge run_all.sh). Mismas columnas que knn_mpi;
+        // aqui no hay tune_s / final_s / comm_s (las fases se solapan) pero si grupos y reinicios.
+        const std::string version = dynamic ? "knn_mpi_dyn" : "knn_mpi_spec";
+        char csv[512];
+        std::snprintf(csv, sizeof csv, "CSV,%s,%d,%zu,%zu,%zu,%u,%u,%d,%.6f,%.6f,%.6f,,,,%d,%d,%d,%.6f",
+                      version.c_str(), size, nTuning, nTest, nFinalTrain, maxK, folds, finalK,
+                      totalMatches / (double)nTest, total, maxLoad, nT, nE, stats.restarts, wastedSum);
+        std::cout << csv << std::endl;
     }
 
     MPI_Comm_free(&groupComm);

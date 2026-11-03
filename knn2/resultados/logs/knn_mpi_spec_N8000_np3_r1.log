@@ -1,0 +1,26 @@
+Procesos MPI: 3 (ajuste: 2, evaluacion: 1) | modo estatico | K en [1, 10], 5 folds, 8000 muestras de ajuste, 4000 de test, 24000 de entrenamiento final, K inicial 1
+K: 1 Accuracy: 94.85%
+K: 2 Accuracy: 94.125%
+K: 3 Accuracy: 94.8625%
+K: 4 Accuracy: 94.725%
+K: 5 Accuracy: 94.625%
+K: 6 Accuracy: 94.55%
+K: 7 Accuracy: 94.5125%
+K: 8 Accuracy: 94.5125%
+K: 9 Accuracy: 94.2875%
+K: 10 Accuracy: 94.225%
+Best k: 3
+Test accuracy: 0.95375
+Evolucion del mejor K conocido (segundos desde el inicio):
+  t=0.000  K inicial supuesto = 1
+  t=4.943  nuevo mejor K = 1
+  t=12.254  nuevo mejor K = 3
+  t=36.663  ajuste completo, K definitivo = 3
+Reinicios de la evaluacion (lider): 1, trabajo descartado (suma de evaluadores): 11.997 s
+Por proceso (segundos):
+  proceso 0 [ajuste]      termina a t=36.639  tareas=25  calculo=36.384
+  proceso 1 [ajuste]      termina a t=36.658  tareas=25  calculo=36.402
+  proceso 2 [evaluacion]  termina a t=36.664  evaluacion=26.956 (descartado=11.997)  espera=9.448  reinicios=1
+Carga del dataset (replicada, maximo): 0.250
+Total elapsed time 36.664 seconds
+CSV,knn_mpi_spec,3,8000,4000,24000,10,5,3,0.953750,36.664489,0.249520,,,,2,1,1,11.996622

@@ -7,31 +7,34 @@ grep -q "$(printf '\r')" "$0" 2>/dev/null && sed -i 's/\r$//' "$0" && exec bash 
 # crossValidation.cc, mnist.cc, sample.cc, timer.h, get_dataset.sh ...) y ejecutalo:
 #
 #     chmod +x run_all.sh
-#     ./run_all.sh                       # todas las etapas con los valores por defecto (rapido)
+#     ./run_all.sh                       # todo: compila, verifica, perfila (gprof), mide y dibuja
 #     HOSTFILE=hosts.txt SIZES="4000 8000 20000" NPS="1 2 4 8 12 16" REPS=3 ./run_all.sh
 #
-# El script lleva DENTRO todo lo que hace falta (al final del fichero): los programas
-#   knn_seq.cpp, knn_mpi.cpp, knn_mpi_spec.cpp (pasos 2 y 3), la biblioteca "limpia" de la
-#   Tarea 0, graficas.py, los programas de la Tarea 0 y los grafos de flujo (.dot).
-# Los extrae en mpi_src/ (no toca los ficheros del profesor), compila, verifica, perfila con
-# gprof, mide, dibuja y deja todo en resultados/ (cambiable con OUT=...).
+# Solo se prueban las versiones optimizadas (compiladas con -O2): el secuencial como referencia
+# y las tres versiones MPI (paso 1: paralelismo de datos; paso 2: paralelismo funcional con
+# ejecucion especulativa; paso 3: lo mismo con cola de tareas dinamica y ayuda de los evaluadores).
+#
+# El script lleva DENTRO los fuentes (al final del fichero): knn_seq.cpp, knn_mpi.cpp,
+# knn_mpi_spec.cpp, graficas.py y los grafos de flujo (.dot). Los extrae en mpi_src/ (no toca
+# los ficheros del profesor), y deja todo lo generado en build/ y resultados/ (OUT=...).
 #
 # Si el fichero viene de Windows (saltos de linea CRLF): 'bash run_all.sh' se arregla solo; si al
 # ejecutar './run_all.sh' sale "bash\r: No existe el fichero", haz una vez:  sed -i 's/\r$//' run_all.sh
 #
-# ETAPAS (en este orden; sin argumentos se ejecutan todas):
-#   arch        arquitectura.txt: procesador, nucleos, caches, memoria (de esta maquina y de cada nodo)
-#   extract     extrae los fuentes embebidos a mpi_src/
-#   build       comprueba herramientas y dataset, compila TODO en build/ (sabores orig y opt)
-#   distribute  copia build/ al resto de nodos del HOSTFILE (ssh sin contrasena)
-#   nodos       nodos.txt: donde se lanzan los procesos y si tienen binarios y dataset
-#   verify      verificacion.txt: todas las versiones dan EXACTAMENTE lo mismo que el secuencial?
-#   gprof       gprof/: perfiles del secuencial (original y limpio) con -O0 y -O2
-#   bench       resultados.csv + logs/: tiempos de cada version, tamano, nº de procesos y repeticion
-#   plots       resumen.txt, speedup.png, eficiencia.png, ... (speed-up, eficiencia, Amdahl, ...)
-#   tarea0      tarea0/: programas del enunciado (vector y matriz) con -O0/-O2 + cambios en la biblioteca
-#   grafos      grafos/: grafos de flujo en DOT (+ PNG/SVG si hay graphviz)
-#   Ejemplos:  ./run_all.sh bench plots      ./run_all.sh build verify      ./run_all.sh gprof
+# ETAPAS (en este orden; sin argumentos se ejecutan las marcadas con *):
+#   arch *       arquitectura.txt: procesador, nucleos, caches, memoria, red (de esta maquina y de cada nodo)
+#   extract      extrae los fuentes embebidos a mpi_src/ (build ya lo hace; solo si quieres leerlos)
+#   build *      comprueba herramientas y dataset y compila en build/
+#   distribute * copia build/ al resto de nodos del HOSTFILE (ssh sin contrasena)
+#   nodos        nodos.txt: donde se lanzan los procesos y si tienen binarios y dataset (verify ya la hace)
+#   verify *     verificacion.txt: las versiones MPI dan EXACTAMENTE lo mismo que el secuencial?
+#   gprof *      gprof/: perfil del secuencial y de cada version MPI (un informe por proceso + el total)
+#   bench *      resultados.csv + logs/: tiempos de cada version, tamano, nº de procesos y repeticion
+#   plots *      resumen.txt, speedup.png, eficiencia.png, ... (speed-up, eficiencia, Amdahl, ...)
+#   grafos *     grafos/: grafos de flujo secuencial y paralelos en DOT (+ PNG/SVG si hay graphviz)
+#   clean        borra lo que este script deja en build/ (binarios, gmon) y mpi_src/, y restos de
+#                versiones antiguas del script. Con CLEAN_RESULTS=1 borra tambien la carpeta de resultados.
+#   Ejemplos:  ./run_all.sh bench plots     ./run_all.sh build verify     ./run_all.sh clean
 #
 # VARIABLES (todas opcionales)
 #   SIZES="2000 4000 8000"  tamanos N del ajuste. Para cada N: test = N/2 y entrenamiento final = 3N
@@ -43,18 +46,15 @@ grep -q "$(printf '\r')" "$0" 2>/dev/null && sed -i 's/\r$//' "$0" && exec bash 
 #   REPS=1                  repeticiones de cada medida (recomendado 3 para los resultados finales)
 #   HOSTFILE=hosts.txt      fichero de hosts de MPI (una linea por ordenador: "nombre slots=4")
 #   MPI_EXTRA=""            opciones extra de mpirun (p. ej. "--map-by node --mca btl_tcp_if_include eth0")
-#   SEQ_FLAVORS="orig opt"  secuenciales a medir como linea base (orig = codigo del profesor tal cual,
-#                           opt = con las limpiezas de la Tarea 0)
-#   MPI_FLAVORS="opt"       sabores MPI a medir en bench ("orig opt" para medir los dos). La
-#                           verificacion comprueba siempre los dos.
 #   BENCH_VERSIONS="knn_mpi knn_mpi_spec knn_mpi_dyn"   que versiones medir (paso 1, paso 2, paso 3)
-#   PROF_N=2000             tamano N con el que se pasa gprof
+#   PROF_N=2000  PROF_NP=<min(4,slots)>   tamano N y numero de procesos con los que se pasa gprof
+#   GPROF_LEVELS="O2"       niveles de optimizacion del perfilado ("O0 O2" para los dos);  GPROF_SEQ=1  perfila
+#                           tambien el secuencial (0 = solo las versiones MPI)
 #   VERIFY_N=1000  VERIFY_NPS="1 2 3 4"   tamano y procesos de la verificacion
 #   MAXK=10 FOLDS=5         rango de K y numero de folds
 #   OUT=resultados          carpeta de salida;   APPEND=1  anade a resultados.csv en vez de reescribirlo
 #   RUN_TIMEOUT=0           segundos maximos por ejecucion (0 = sin limite; util para no quedarse
 #                           colgado si un nodo falla)
-#   T0_REPS=3  T0_VECTOR="100000 1000000 10000000"  T0_MATRIX="500 1000 2000 4000"   (etapa tarea0)
 #   BUILD=<dir>             carpeta de binarios y dataset (por defecto ./build, como en el proyecto)
 # =============================================================================
 
@@ -68,26 +68,29 @@ SIZES=${SIZES:-"2000 4000 8000"}
 NPS=${NPS:-}
 REPS=${REPS:-1}
 PROF_N=${PROF_N:-2000}
+PROF_NP=${PROF_NP:-}
+GPROF_LEVELS=${GPROF_LEVELS:-"O2"}
+GPROF_SEQ=${GPROF_SEQ:-1}
 VERIFY_N=${VERIFY_N:-1000}
 VERIFY_NPS=${VERIFY_NPS:-"1 2 3 4"}
 MAXK=${MAXK:-10}
 FOLDS=${FOLDS:-5}
 HOSTFILE=${HOSTFILE:-}
 MPI_EXTRA=${MPI_EXTRA:-}
-SEQ_FLAVORS=${SEQ_FLAVORS:-"orig opt"}
-MPI_FLAVORS=${MPI_FLAVORS:-"opt"}
 BENCH_VERSIONS=${BENCH_VERSIONS:-"knn_mpi knn_mpi_spec knn_mpi_dyn"}
 APPEND=${APPEND:-0}
 OUT=${OUT:-resultados}
 RUN_TIMEOUT=${RUN_TIMEOUT:-0}
-T0_REPS=${T0_REPS:-3}
-T0_VECTOR=${T0_VECTOR:-"100000 1000000 10000000"}
-T0_MATRIX=${T0_MATRIX:-"500 1000 2000 4000"}
+CLEAN_RESULTS=${CLEAN_RESULTS:-0}
 
+for _o in $GPROF_LEVELS; do
+    [[ "$_o" == O0 || "$_o" == O2 ]] || { echo "[ERROR] GPROF_LEVELS solo admite O0 y/o O2 (has puesto '$_o')" >&2; exit 1; }
+done
 case "$OUT" in /*) OUT_DIR="$OUT" ;; *) OUT_DIR="$ROOT/$OUT" ;; esac
 BUILD=${BUILD:-$ROOT/build}
 case "$BUILD" in /*) ;; *) BUILD="$ROOT/$BUILD" ;; esac
 MY="$ROOT/mpi_src"          # fuentes propios extraidos de este script
+COMPILE_LOG="$OUT_DIR/compilacion.log"
 if [[ -n "$HOSTFILE" ]]; then
     HOSTFILE="$(readlink -f "$HOSTFILE")"
     [[ -f "$HOSTFILE" ]] || { echo "[ERROR] No existe el HOSTFILE '$HOSTFILE'" >&2; exit 1; }
@@ -103,7 +106,7 @@ warn() { printf '   [AVISO] %s\n' "$*" >&2; }
 die()  { printf '[ERROR] %s\n' "$*" >&2; exit 1; }
 
 hosts_list() { awk '!/^[[:space:]]*(#|$)/ {print $1}' "$HOSTFILE" | sort -u; }
-sfx() { [[ "$1" == orig ]] && echo "" || echo "_$1"; }        # sabor -> sufijo del binario
+is_local() { [[ "$1" == "$(hostname)" || "$1" == localhost || "$1" == 127.0.0.1 ]]; }
 
 # Tamanos derivados de N (con los topes del dataset MNIST: 60000 train, 10000 test).
 test_of()  { local t=$(( $1 / 2 )); (( t > 10000 )) && t=10000; echo "$t"; }
@@ -125,6 +128,7 @@ default_nps() {
     echo $out
 }
 [[ -n "$NPS" ]] || NPS=$(default_nps)
+[[ -n "$PROF_NP" ]] || { PROF_NP=$(slots_total); (( PROF_NP > 4 )) && PROF_NP=4; (( PROF_NP < 2 )) && PROF_NP=2; }
 
 with_timeout() { if (( RUN_TIMEOUT > 0 )); then timeout -k 10 "$RUN_TIMEOUT" "$@"; else "$@"; fi; }
 
@@ -146,17 +150,16 @@ run_mpi() {
     (cd "$BUILD" && with_timeout mpirun "${args[@]}" $MPI_EXTRA -np "$np" "$@")
 }
 
-# launch <version> <np> <N> [MAXK FOLDS]: lanza una version con el tamano N (test y final derivados).
-#   knn_seq | knn_mpi | knn_mpi_spec (paso 2, estatico) | knn_mpi_dyn (paso 3, dinamico); sufijo _opt = limpio
+# launch <version> <np> <N>: lanza una version con el tamano N (test y entrenamiento final derivados).
+#   knn_seq | knn_mpi (paso 1) | knn_mpi_spec (paso 2, estatico) | knn_mpi_dyn (paso 3, dinamico)
 launch() {
-    local ver=$1 np=$2 N=$3 fl="" T F
+    local ver=$1 np=$2 N=$3 T F
     T=$(test_of "$N"); F=$(final_of "$N")
-    if [[ "$ver" == *_opt ]]; then fl=_opt; ver=${ver%_opt}; fi
     case "$ver" in
-        knn_seq)      run_seq "knn_seq$fl" "$MAXK" "$FOLDS" "$N" "$T" "$F" ;;
-        knn_mpi)      run_mpi "$np" "./knn_mpi$fl" "$MAXK" "$FOLDS" "$N" "$T" "$F" ;;
-        knn_mpi_spec) run_mpi "$np" "./knn_mpi_spec$fl" "$MAXK" "$FOLDS" "$N" "$T" "$F" 0 1 0 ;;
-        knn_mpi_dyn)  run_mpi "$np" "./knn_mpi_spec$fl" "$MAXK" "$FOLDS" "$N" "$T" "$F" 0 1 1 ;;
+        knn_seq)      run_seq knn_seq "$MAXK" "$FOLDS" "$N" "$T" "$F" ;;
+        knn_mpi)      run_mpi "$np" ./knn_mpi "$MAXK" "$FOLDS" "$N" "$T" "$F" ;;
+        knn_mpi_spec) run_mpi "$np" ./knn_mpi_spec "$MAXK" "$FOLDS" "$N" "$T" "$F" 0 1 0 ;;
+        knn_mpi_dyn)  run_mpi "$np" ./knn_mpi_spec "$MAXK" "$FOLDS" "$N" "$T" "$F" 0 1 1 ;;
         *) die "Version desconocida: $ver" ;;
     esac
 }
@@ -167,14 +170,9 @@ extract_res() {
 }
 
 need_binaries() {
-    local b fl
-    for fl in $SEQ_FLAVORS; do
-        [[ -x "$BUILD/knn_seq$(sfx "$fl")" ]] || die "Falta build/knn_seq$(sfx "$fl"): ejecuta primero './run_all.sh build'"
-    done
-    for fl in $MPI_FLAVORS; do
-        for b in knn_mpi knn_mpi_spec; do
-            [[ -x "$BUILD/$b$(sfx "$fl")" ]] || die "Falta build/$b$(sfx "$fl"): ejecuta primero './run_all.sh build'"
-        done
+    local b
+    for b in knn_seq knn_mpi knn_mpi_spec; do
+        [[ -x "$BUILD/$b" ]] || die "Falta build/$b: ejecuta primero './run_all.sh build'"
     done
 }
 
@@ -183,6 +181,40 @@ emit() {
     mkdir -p "$(dirname "$2")"
     awk -v n="$1" '$0 == "#@@BEGIN " n {f=1; next} $0 == "#@@END " n {f=0} f' "$SELF" > "$2"
     [[ -s "$2" ]] || die "No se pudo extraer '$1' del script"
+}
+
+compile() {  # compile <comando...>: lo anota en compilacion.log y para si falla
+    mkdir -p "$OUT_DIR"
+    echo "\$ $*" >> "$COMPILE_LOG"
+    "$@" >> "$COMPILE_LOG" 2>&1 || die "Error de compilacion: $* (ver $COMPILE_LOG)"
+}
+
+# Fuentes del profesor que usan nuestros programas.
+check_project_files() {
+    local t
+    for t in knn.cc knn.h crossValidation.cc crossValidation.h mnist.cc mnist.h sample.cc sample.h timer.h; do
+        [[ -f "$ROOT/$t" ]] || die "Falta $t en $ROOT: copia run_all.sh a la carpeta del proyecto del profesor"
+    done
+}
+SEQ_SRC=("$MY/knn_seq.cpp" "$ROOT/crossValidation.cc" "$ROOT/knn.cc" "$ROOT/mnist.cc" "$ROOT/sample.cc")
+MPI_SRC=("$MY/knn_mpi.cpp" "$ROOT/knn.cc" "$ROOT/mnist.cc" "$ROOT/sample.cc")
+SPEC_SRC=("$MY/knn_mpi_spec.cpp" "$ROOT/knn.cc" "$ROOT/mnist.cc" "$ROOT/sample.cc")
+
+ensure_dataset() {
+    local need=(train/train-images-idx3-ubyte train/train-labels-idx1-ubyte test/t10k-images-idx3-ubyte test/t10k-labels-idx1-ubyte)
+    local f missing=0
+    for f in "${need[@]}"; do [[ -s "$BUILD/$f" ]] || missing=1; done
+    if (( missing )); then
+        info "Falta el dataset en build/: ejecutando get_dataset.sh (necesita wget y red)"
+        if [[ -f "$ROOT/get_dataset.sh" ]]; then
+            chmod +x "$ROOT/get_dataset.sh"
+            (cd "$ROOT" && ./get_dataset.sh) > "$OUT_DIR/get_dataset.log" 2>&1 || warn "get_dataset.sh termino con error (ver get_dataset.log); se comprueba el dataset igualmente"
+        fi
+        missing=0
+        for f in "${need[@]}"; do [[ -s "$BUILD/$f" ]] || missing=1; done
+        (( missing )) && die "Sigue faltando el dataset. Copia los 4 archivos IDX a $BUILD/train y $BUILD/test."
+    fi
+    info "Dataset MNIST: OK"
 }
 
 # ------------------------------------------------------------------ arch ----
@@ -197,6 +229,7 @@ stage_arch() {
         echo "--- lscpu";     lscpu 2>/dev/null || echo "(lscpu no disponible)"
         echo "--- memoria";   free -h 2>/dev/null
         echo "--- caches (getconf)"; getconf -a 2>/dev/null | grep -i cache
+        echo "--- red";       ip -br addr 2>/dev/null || echo "(ip no disponible)"
         echo "--- herramientas"
         g++ --version 2>/dev/null | head -1
         mpirun --version 2>&1 | head -1
@@ -219,8 +252,6 @@ stage_extract() {
     log "Extrayendo los fuentes embebidos a $MY"
     local f
     for f in knn_seq.cpp knn_mpi.cpp knn_mpi_spec.cpp graficas.py \
-             opt/knn.h opt/knn.cc opt/crossValidation.h opt/crossValidation.cc \
-             tarea0/tarea0_vector.cpp tarea0/tarea0_matriz.cpp tarea0/cambios_tarea0.txt \
              grafos/secuencial.dot grafos/paso1_datos.dot grafos/paso2_3_especulativo.dot; do
         emit "$f" "$MY/$f"
     done
@@ -231,79 +262,51 @@ stage_extract() {
 stage_build() {
     log "Herramientas y dataset"
     local t
-    for t in g++ mpic++ mpirun gprof; do
+    for t in g++ mpic++ mpirun; do
         command -v "$t" >/dev/null 2>&1 || die "Falta '$t' (instala build-essential y openmpi-bin libopenmpi-dev)"
         info "$t: $(command -v "$t")"
     done
-    for t in knn.cc knn.h crossValidation.cc crossValidation.h mnist.cc mnist.h sample.cc sample.h timer.h; do
-        [[ -f "$ROOT/$t" ]] || die "Falta $t en $ROOT: copia run_all.sh a la carpeta del proyecto del profesor"
-    done
+    check_project_files
     mkdir -p "$BUILD" "$OUT_DIR"
+    rm -rf "$MY"                                   # fuentes siempre frescos (y sin restos de versiones antiguas)
+    rm -f "$BUILD"/knn_*_opt* "$BUILD"/knn_seq_pg_* "$BUILD"/knn_mpi_pg_* "$BUILD"/knn_mpi_spec_pg_* 2>/dev/null
     stage_extract
+    ensure_dataset
 
-    local need=(train/train-images-idx3-ubyte train/train-labels-idx1-ubyte test/t10k-images-idx3-ubyte test/t10k-labels-idx1-ubyte)
-    local f missing=0
-    for f in "${need[@]}"; do [[ -s "$BUILD/$f" ]] || missing=1; done
-    if (( missing )); then
-        info "Falta el dataset en build/: ejecutando get_dataset.sh (necesita wget y red)"
-        if [[ -f "$ROOT/get_dataset.sh" ]]; then
-            chmod +x "$ROOT/get_dataset.sh"
-            (cd "$ROOT" && ./get_dataset.sh) > "$OUT_DIR/get_dataset.log" 2>&1 || warn "get_dataset.sh termino con error (ver get_dataset.log); se comprueba el dataset igualmente"
-        fi
-        missing=0
-        for f in "${need[@]}"; do [[ -s "$BUILD/$f" ]] || missing=1; done
-        (( missing )) && die "Sigue faltando el dataset. Copia los 4 archivos IDX a $BUILD/train y $BUILD/test."
-    fi
-    info "Dataset MNIST: OK"
-
-    log "Compilacion (salida en $OUT_DIR/compilacion.log)"
-    local cl="$OUT_DIR/compilacion.log"
-    : > "$cl"
-    compile() {  # compile <comando...>
-        echo "\$ $*" >> "$cl"
-        "$@" >> "$cl" 2>&1 || die "Error de compilacion: $* (ver $cl)"
-    }
-    local fl s inc def lib_seq lib_mpi
-    for fl in orig opt; do
-        s=$(sfx "$fl")
-        if [[ "$fl" == orig ]]; then   # biblioteca del profesor tal cual
-            inc=(-I"$ROOT")
-            lib_seq=("$ROOT/crossValidation.cc" "$ROOT/knn.cc")
-            lib_mpi=("$ROOT/knn.cc")
-        else                           # biblioteca con las limpiezas de la Tarea 0 (tiene prioridad en -I)
-            inc=(-I"$MY/opt" -I"$ROOT")
-            lib_seq=("$MY/opt/crossValidation.cc" "$MY/opt/knn.cc")
-            lib_mpi=("$MY/opt/knn.cc")
-        fi
-        def=(-DFLAVOR="\"$s\"")
-        compile g++ -O2 -std=c++17 "${inc[@]}" "${def[@]}" "$MY/knn_seq.cpp" "${lib_seq[@]}" "$ROOT/mnist.cc" "$ROOT/sample.cc" -o "$BUILD/knn_seq$s"
-        compile g++ -O0 -g -pg -std=c++17 "${inc[@]}" "${def[@]}" "$MY/knn_seq.cpp" "${lib_seq[@]}" "$ROOT/mnist.cc" "$ROOT/sample.cc" -o "$BUILD/knn_seq${s}_pg_O0"
-        compile g++ -O2 -g -pg -std=c++17 "${inc[@]}" "${def[@]}" "$MY/knn_seq.cpp" "${lib_seq[@]}" "$ROOT/mnist.cc" "$ROOT/sample.cc" -o "$BUILD/knn_seq${s}_pg_O2"
-        compile mpic++ -O2 -std=c++17 "${inc[@]}" "${def[@]}" "$MY/knn_mpi.cpp" "${lib_mpi[@]}" "$ROOT/mnist.cc" "$ROOT/sample.cc" -o "$BUILD/knn_mpi$s"
-        compile mpic++ -O2 -std=c++17 "${inc[@]}" "${def[@]}" "$MY/knn_mpi_spec.cpp" "${lib_mpi[@]}" "$ROOT/mnist.cc" "$ROOT/sample.cc" -o "$BUILD/knn_mpi_spec$s"
-        info "Sabor '$fl': knn_seq$s (+ _pg_O0, _pg_O2), knn_mpi$s, knn_mpi_spec$s (modos estatico y dinamico)"
-    done
+    log "Compilacion con -O2 (salida en $COMPILE_LOG)"
+    : > "$COMPILE_LOG"
+    compile g++    -O2 -std=c++17 -I"$ROOT" "${SEQ_SRC[@]}"  -o "$BUILD/knn_seq"
+    compile mpic++ -O2 -std=c++17 -I"$ROOT" "${MPI_SRC[@]}"   -o "$BUILD/knn_mpi"
+    compile mpic++ -O2 -std=c++17 -I"$ROOT" "${SPEC_SRC[@]}"  -o "$BUILD/knn_mpi_spec"
+    info "knn_seq, knn_mpi (paso 1), knn_mpi_spec (paso 2 = modo estatico, paso 3 = modo dinamico)"
 }
 
 # ------------------------------------------------------------ distribute ----
-stage_distribute() {
-    [[ -n "$HOSTFILE" ]] || { log "Distribucion"; info "Sin HOSTFILE: nada que copiar"; return; }
-    log "Copia de build/ al resto de nodos (misma ruta en todos)"
-    local me h qdir
-    me=$(hostname)
+distribute_build() {   # copia build/ a cada nodo del HOSTFILE (misma ruta en todos)
+    local h qdir
     qdir=$(printf '%q' "$BUILD")
     for h in $(hosts_list); do
-        [[ "$h" == "$me" || "$h" == "localhost" || "$h" == "127.0.0.1" ]] && continue
+        is_local "$h" && continue
         if ! ssh -o BatchMode=yes -o ConnectTimeout=10 "$h" "mkdir -p $qdir"; then
             warn "No se pudo conectar con $h por ssh (hacen falta claves sin contrasena y el mismo usuario)"
             continue
         fi
         if command -v rsync >/dev/null 2>&1 && ssh -o BatchMode=yes "$h" 'command -v rsync' >/dev/null 2>&1; then
-            rsync -a --exclude '*_pg_*' --exclude gmon.out "$BUILD/" "$h:$qdir/" && info "$h: copiado (rsync)" || warn "$h: fallo rsync"
+            rsync -a --exclude 'gmon*' "$BUILD/" "$h:$qdir/" && info "$h: copiado (rsync)" || warn "$h: fallo rsync"
         else
-            scp -q -r "$BUILD/." "$h:$qdir/" && info "$h: copiado (scp)" || warn "$h: fallo scp"
+            # sin rsync: el dataset solo si falta, y siempre los binarios
+            if ! ssh -o BatchMode=yes "$h" "[ -s $qdir/train/train-images-idx3-ubyte ]"; then
+                scp -q -r "$BUILD/train" "$BUILD/test" "$h:$qdir/" || warn "$h: fallo scp del dataset"
+            fi
+            scp -q "$BUILD"/knn_* "$h:$qdir/" && info "$h: copiado (scp)" || warn "$h: fallo scp"
         fi
     done
+}
+
+stage_distribute() {
+    [[ -n "$HOSTFILE" ]] || { log "Distribucion"; info "Sin HOSTFILE: nada que copiar"; return; }
+    log "Copia de build/ al resto de nodos (misma ruta en todos)"
+    distribute_build
     info "Recuerda: los binarios deben ser validos en todos los nodos (misma arquitectura y librerias MPI)."
     info "Si la carpeta del proyecto esta en un disco compartido (NFS), no hace falta copiar nada."
 }
@@ -316,7 +319,7 @@ stage_nodos() {
     for np in $VERIFY_NPS $NPS; do (( np > maxnp )) && maxnp=$np; done
     {
         echo "# Un proceso por linea (np=$maxnp): nodo, directorio de trabajo, archivos de train/test y si existe el binario"
-        run_mpi "$maxnp" sh -c 'echo "$(hostname) cwd=$(pwd) train=$(ls train 2>/dev/null | wc -l) test=$(ls test 2>/dev/null | wc -l) knn_mpi_opt=$([ -x ./knn_mpi_opt ] && echo si || echo NO)"' 2>&1 | sort
+        run_mpi "$maxnp" sh -c 'echo "$(hostname) cwd=$(pwd) train=$(ls train 2>/dev/null | wc -l) test=$(ls test 2>/dev/null | wc -l) knn_mpi=$([ -x ./knn_mpi ] && echo si || echo NO)"' 2>&1 | sort
     } > "$OUT_DIR/nodos.txt"
     sed 's/^/   /' "$OUT_DIR/nodos.txt"
     if grep -qE 'NO$|train=0|test=0' "$OUT_DIR/nodos.txt"; then
@@ -326,43 +329,31 @@ stage_nodos() {
 
 # ---------------------------------------------------------------- verify ----
 stage_verify() {
-    local fl b
-    for fl in orig opt; do
-        [[ -x "$BUILD/knn_seq$(sfx "$fl")" && -x "$BUILD/knn_mpi$(sfx "$fl")" && -x "$BUILD/knn_mpi_spec$(sfx "$fl")" ]] \
-            || die "Faltan binarios del sabor '$fl': ejecuta primero './run_all.sh build'"
-    done
+    need_binaries
     mkdir -p "$OUT_DIR"
     stage_nodos
 
     local N=$VERIFY_N T F
     T=$(test_of "$N"); F=$(final_of "$N")
     log "Verificacion: N=$N (test=$T, entrenamiento final=$F), procesos: $VERIFY_NPS"
-    local ref got ok=1 np ver vlab res
+    local ref got ok=1 np ver res
     ref=$(launch knn_seq 1 "$N" | extract_res)
     [[ -n "$ref" ]] || die "El secuencial no produjo resultados"
     {
-        echo "Referencia: knn_seq (original, codigo del profesor) con maxK=$MAXK folds=$FOLDS N=$N test=$T entrenamiento_final=$F"
+        echo "Referencia: knn_seq (secuencial) con maxK=$MAXK folds=$FOLDS N=$N test=$T entrenamiento_final=$F"
         echo "$ref"
         echo
     } > "$OUT_DIR/verificacion.txt"
 
-    check() {  # check <etiqueta> <salida obtenida>
-        if [[ "$2" == "$ref" ]]; then res="OK"; else
-            res="FALLO"; ok=0
-            { echo "--- $1: DIFERENCIAS respecto al secuencial"; diff <(echo "$ref") <(echo "$2"); } >> "$OUT_DIR/verificacion.txt"
-        fi
-        printf '%-26s %s\n' "$1" "$res" | tee -a "$OUT_DIR/verificacion.txt" | sed 's/^/   /'
-    }
-    check "knn_seq_opt (secuencial limpio)" "$(launch knn_seq_opt 1 "$N" | extract_res)"
-    for fl in orig opt; do
-        [[ $fl == orig ]] && b="" || b="_opt"
-        for np in $VERIFY_NPS; do
-            for ver in knn_mpi knn_mpi_spec knn_mpi_dyn; do
-                [[ $ver != knn_mpi && $np -lt 2 ]] && continue
-                vlab="$ver$b np=$np"
-                got=$(launch "$ver$b" "$np" "$N" 2>&1 | extract_res)
-                check "$vlab" "$got"
-            done
+    for np in $VERIFY_NPS; do
+        for ver in knn_mpi knn_mpi_spec knn_mpi_dyn; do
+            [[ $ver != knn_mpi && $np -lt 2 ]] && continue   # los pasos 2 y 3 necesitan >= 2 procesos
+            got=$(launch "$ver" "$np" "$N" 2>&1 | extract_res)
+            if [[ "$got" == "$ref" ]]; then res="OK"; else
+                res="FALLO"; ok=0
+                { echo "--- $ver np=$np: DIFERENCIAS respecto al secuencial"; diff <(echo "$ref") <(echo "$got"); } >> "$OUT_DIR/verificacion.txt"
+            fi
+            printf '%-14s np=%-3s %s\n' "$ver" "$np" "$res" | tee -a "$OUT_DIR/verificacion.txt" | sed 's/^/   /'
         done
     done
     if (( ok )); then
@@ -378,40 +369,125 @@ top_flat() {  # primeras filas del perfil plano de un informe gprof
     awk '/^Flat profile/{f=1;next} /^Call graph/{f=0} f && NF>=4 && $1 ~ /^[0-9]+(\.[0-9]+)?$/ {s=$0; if (length(s)>110) s=substr(s,1,107) "..."; print s; if (++n>=8) exit}' "$1"
 }
 
+cpu_of_flat() {  # segundos de CPU muestreados por gprof en un perfil plano (la ultima cifra acumulada)
+    awk '/^Flat profile/{f=1;next} /^Call graph/{f=0} f && NF>=4 && $1 ~ /^[0-9]+(\.[0-9]+)?$/ { if ($2+0 > m) m=$2+0 } END { printf "%.2f", m }' "$1"
+}
+
+# Con -pg cada proceso MPI escribe gmon_rank<N>.<pid> en su directorio de trabajo (build/ de SU nodo).
+gmon_clean() {   # borra los gmon_rank* de build/ en este equipo y en los nodos
+    rm -f "$BUILD"/gmon_rank* 2>/dev/null
+    [[ -n "$HOSTFILE" ]] || return 0
+    local h qdir
+    qdir=$(printf '%q' "$BUILD")
+    for h in $(hosts_list); do
+        is_local "$h" && continue
+        ssh -o BatchMode=yes -o ConnectTimeout=5 "$h" "rm -f $qdir/gmon_rank*" >/dev/null 2>&1
+    done
+    return 0
+}
+
+gmon_collect() {  # gmon_collect <carpeta>: trae a <carpeta> los gmon_rank* de este equipo y de los nodos
+    local dest=$1 h qdir
+    qdir=$(printf '%q' "$BUILD")
+    mkdir -p "$dest"
+    mv "$BUILD"/gmon_rank* "$dest"/ 2>/dev/null
+    [[ -n "$HOSTFILE" ]] || return 0
+    for h in $(hosts_list); do
+        is_local "$h" && continue
+        ssh -o BatchMode=yes -o ConnectTimeout=5 "$h" "cd $qdir && tar cf - gmon_rank* 2>/dev/null && rm -f gmon_rank*" 2>/dev/null | tar xf - -C "$dest" 2>/dev/null
+    done
+    return 0
+}
+
 stage_gprof() {
-    local fl s O
-    for fl in orig opt; do
-        s=$(sfx "$fl")
-        [[ -x "$BUILD/knn_seq${s}_pg_O0" && -x "$BUILD/knn_seq${s}_pg_O2" ]] || die "Faltan los binarios con -pg (sabor $fl): ejecuta './run_all.sh build'"
+    local t
+    for t in g++ mpic++ mpirun gprof; do
+        command -v "$t" >/dev/null 2>&1 || die "Falta '$t' (instala build-essential, openmpi-bin, libopenmpi-dev y binutils)"
     done
-    log "gprof sobre el secuencial (N=$PROF_N, test=$(test_of "$PROF_N"), entrenamiento final=$(final_of "$PROF_N"))"
-    local d="$OUT_DIR/gprof"
-    mkdir -p "$d"
-    for fl in orig opt; do
-        s=$(sfx "$fl")
-        for O in O0 O2; do
-            info "Ejecutando knn_seq${s}_pg_$O ..."
-            rm -f "$BUILD/gmon.out"
-            run_seq "knn_seq${s}_pg_$O" "$MAXK" "$FOLDS" "$PROF_N" "$(test_of "$PROF_N")" "$(final_of "$PROF_N")" > "$d/salida_${fl}_$O.txt"
-            if [[ ! -f "$BUILD/gmon.out" ]]; then warn "No se genero gmon.out ($fl, -$O)"; continue; fi
-            mv "$BUILD/gmon.out" "$d/gmon_${fl}_$O.out"
-            (cd "$BUILD" && gprof -b -p -q "./knn_seq${s}_pg_$O" "$d/gmon_${fl}_$O.out") > "$d/perfil_${fl}_$O.txt" 2>&1
-            info "perfil_${fl}_$O.txt generado"
-        done
-    done
+    check_project_files
+    mkdir -p "$BUILD" "$OUT_DIR"
+    [[ -f "$MY/knn_seq.cpp" ]] || stage_extract
+    ensure_dataset
+    local d="$OUT_DIR/gprof" O ver bin tag r f dir
+    local N=$PROF_N np=$PROF_NP T F
+    T=$(test_of "$N"); F=$(final_of "$N")
+    rm -rf "$d"; mkdir -p "$d"
+    local res="$d/resumen_gprof.txt"
     {
-        echo "Resumen gprof (secuencial, N=$PROF_N). Columnas: %tiempo  acumulado  propio  llamadas  ms/llamada  ms/llamada-total  funcion"
-        echo "orig = codigo del profesor; opt = con las limpiezas de la Tarea 0 (ver tarea0/cambios_tarea0.txt)."
-        echo "Con -O2 hay funciones que desaparecen por 'inlining' y el cuello de botella puede cambiar de sitio."
-        echo "Los informes completos (perfil plano + grafo de llamadas) estan en perfil_<sabor>_<O>.txt."
-        for fl in orig opt; do
-            for O in O0 O2; do
-                echo; echo "=== $fl, -$O: funciones con mas tiempo propio ==="
-                [[ -f "$d/perfil_${fl}_$O.txt" ]] && top_flat "$d/perfil_${fl}_$O.txt"
-            done
+        echo "Resumen gprof (N=$N, test=$T, entrenamiento final=$F; versiones MPI con $np procesos)."
+        echo "gprof mide TIEMPO DE CPU (muestreo cada 10 ms), no tiempo de pared: las esperas de MPI (bloqueos,"
+        echo "usleep, barreras) no cuentan, asi que la CPU de un proceso puede ser mucho menor que el tiempo total."
+        echo "Ese hueco es la espera o el desequilibrio del reparto. Cada proceso MPI genera su propio perfil."
+        echo "Columnas del perfil: %tiempo  acumulado  propio  llamadas  ms/llamada  ms/llamada-total  funcion"
+    } > "$res"
+
+    log "Compilando con -pg (niveles: $GPROF_LEVELS)"
+    for O in $GPROF_LEVELS; do
+        compile g++    -$O -g -pg -std=c++17 -I"$ROOT" "${SEQ_SRC[@]}"  -o "$BUILD/knn_seq_pg_$O"
+        compile mpic++ -$O -g -pg -std=c++17 -I"$ROOT" "${MPI_SRC[@]}"  -o "$BUILD/knn_mpi_pg_$O"
+        compile mpic++ -$O -g -pg -std=c++17 -I"$ROOT" "${SPEC_SRC[@]}" -o "$BUILD/knn_mpi_spec_pg_$O"
+    done
+    [[ -n "$HOSTFILE" ]] && distribute_build
+
+    if [[ "$GPROF_SEQ" == 1 ]]; then
+        log "gprof sobre el secuencial (N=$N)"
+        for O in $GPROF_LEVELS; do
+            info "Ejecutando knn_seq_pg_$O ..."
+            rm -f "$BUILD/gmon.out"
+            run_seq "knn_seq_pg_$O" "$MAXK" "$FOLDS" "$N" "$T" "$F" > "$d/salida_seq_$O.txt"
+            if [[ ! -f "$BUILD/gmon.out" ]]; then warn "No se genero gmon.out (secuencial, -$O)"; continue; fi
+            mv "$BUILD/gmon.out" "$d/gmon_seq_$O.out"
+            (cd "$BUILD" && gprof -b -p -q "./knn_seq_pg_$O" "$d/gmon_seq_$O.out") > "$d/perfil_seq_$O.txt" 2>&1
+            {
+                echo; echo "=== secuencial, -$O: $(grep -m1 'Total elapsed time' "$d/salida_seq_$O.txt" 2>/dev/null || echo 'sin tiempo total') ==="
+                echo "Funciones con mas tiempo propio:"; top_flat "$d/perfil_seq_$O.txt"
+            } >> "$res"
+            info "perfil_seq_$O.txt generado"
         done
-    } > "$d/resumen_gprof.txt"
-    sed 's/^/   /' "$d/resumen_gprof.txt"
+    fi
+
+    log "gprof sobre las versiones MPI (N=$N, $np procesos)"
+    local -a extra
+    for ver in knn_mpi knn_mpi_spec knn_mpi_dyn; do
+        for O in $GPROF_LEVELS; do
+            case "$ver" in
+                knn_mpi)      bin="knn_mpi_pg_$O";      extra=() ;;
+                knn_mpi_spec) bin="knn_mpi_spec_pg_$O"; extra=(0 1 0) ;;
+                knn_mpi_dyn)  bin="knn_mpi_spec_pg_$O"; extra=(0 1 1) ;;
+            esac
+            tag="${ver}_$O"
+            dir="$d/gmon_$tag"
+            info "Ejecutando $tag con $np procesos ..."
+            gmon_clean
+            run_mpi "$np" "./$bin" "$MAXK" "$FOLDS" "$N" "$T" "$F" ${extra[@]+"${extra[@]}"} > "$d/salida_$tag.txt" 2>&1
+            gmon_collect "$dir"
+            if ! ls "$dir"/gmon_rank* >/dev/null 2>&1; then warn "No se generaron gmon_rank* para $tag (ver salida_$tag.txt)"; continue; fi
+
+            : > "$d/perfil_${tag}_procesos.txt"
+            {
+                echo; echo "=== $tag: $(grep -m1 'Total elapsed time' "$d/salida_$tag.txt" 2>/dev/null || echo 'sin tiempo total') ==="
+                echo "CPU muestreada por proceso (rango: segundos):"
+            } >> "$res"
+            for r in $(seq 0 $(( np - 1 ))); do
+                f=$(ls "$dir"/gmon_rank${r}.* 2>/dev/null | head -1)
+                [[ -n "$f" ]] || continue
+                gprof -b -p "$BUILD/$bin" "$f" > "$dir/.plano" 2>&1
+                { echo "################ proceso (rango) $r"; cat "$dir/.plano"; echo; } >> "$d/perfil_${tag}_procesos.txt"
+                printf '   rango %-3s %s s\n' "$r" "$(cpu_of_flat "$dir/.plano")" >> "$res"
+            done
+            rm -f "$dir/.plano"
+            # perfil total: gprof suma los ficheros de todos los procesos si se le pasan varios
+            # (se evita 'gprof -s', que con algunos binarios falla con "somebody miscounted")
+            gprof -b -p -q "$BUILD/$bin" "$dir"/gmon_rank* > "$d/perfil_${tag}_total.txt" 2>&1
+            if grep -q '^Flat profile' "$d/perfil_${tag}_total.txt"; then
+                { echo "Funciones con mas tiempo propio (todos los procesos sumados):"; top_flat "$d/perfil_${tag}_total.txt"; } >> "$res"
+            else
+                warn "gprof no pudo sumar los perfiles de $tag (ver perfil_${tag}_total.txt)"
+            fi
+            info "$tag: perfil_${tag}_total.txt y perfil_${tag}_procesos.txt generados"
+        done
+    done
+    sed 's/^/   /' "$res"
 }
 
 # ----------------------------------------------------------------- bench ----
@@ -426,28 +502,27 @@ run_one() {  # run_one <version> <np> <N> <rep>
     fi
     line=${line#CSV,}
     echo "${line%%,*},$rep,${line#*,}" >> "$OUT_DIR/resultados.csv"
-    printf '   %-20s N=%-6s np=%-3s rep=%-2s total=%s s\n' "$ver" "$N" "$np" "$rep" "$(echo "$line" | cut -d, -f10)"
+    printf '   %-14s N=%-6s np=%-3s rep=%-2s total=%s s\n' "$ver" "$N" "$np" "$rep" "$(echo "$line" | cut -d, -f10)"
 }
 
 stage_bench() {
     need_binaries
-    mkdir -p "$OUT_DIR/logs"
     if [[ "$APPEND" != 1 || ! -f "$OUT_DIR/resultados.csv" ]]; then
+        rm -rf "$OUT_DIR/logs"                      # sin restos de ejecuciones anteriores
+        mkdir -p "$OUT_DIR/logs"
         echo "$CSV_HEADER" > "$OUT_DIR/resultados.csv"
     fi
-    log "Mediciones: SIZES='$SIZES' NPS='$NPS' REPS=$REPS SEQ_FLAVORS='$SEQ_FLAVORS' MPI_FLAVORS='$MPI_FLAVORS' ${HOSTFILE:+HOSTFILE=$HOSTFILE}"
-    local N rep np fl b ver
+    mkdir -p "$OUT_DIR/logs"
+    log "Mediciones: SIZES='$SIZES' NPS='$NPS' REPS=$REPS ${HOSTFILE:+HOSTFILE=$HOSTFILE}"
+    local N rep np ver
     for N in $SIZES; do
         info "--- N=$N (test=$(test_of "$N"), entrenamiento final=$(final_of "$N"))"
         for rep in $(seq 1 "$REPS"); do
-            for fl in $SEQ_FLAVORS; do run_one "knn_seq$(sfx "$fl")" 1 "$N" "$rep"; done
+            run_one knn_seq 1 "$N" "$rep"
             for np in $NPS; do
-                for fl in $MPI_FLAVORS; do
-                    b=$(sfx "$fl")
-                    for ver in $BENCH_VERSIONS; do
-                        [[ $ver != knn_mpi && $np -lt 2 ]] && continue   # los pasos 2 y 3 necesitan >= 2 procesos
-                        run_one "$ver$b" "$np" "$N" "$rep"
-                    done
+                for ver in $BENCH_VERSIONS; do
+                    [[ $ver != knn_mpi && $np -lt 2 ]] && continue   # los pasos 2 y 3 necesitan >= 2 procesos
+                    run_one "$ver" "$np" "$N" "$rep"
                 done
             done
         done
@@ -464,63 +539,11 @@ stage_plots() {
     python3 "$MY/graficas.py" "$OUT_DIR/resultados.csv" "$OUT_DIR" || warn "graficas.py termino con error"
 }
 
-# ---------------------------------------------------------------- tarea0 ----
-stage_tarea0() {
-    log "Tarea 0: vector (push_back vs tamano fijo) y matriz (columnas vs filas)"
-    local d="$OUT_DIR/tarea0" O n r prog
-    mkdir -p "$d/bin"
-    [[ -f "$MY/tarea0/tarea0_vector.cpp" ]] || stage_extract
-    local raw="$d/crudo.csv"
-    echo "programa,opt,size,rep,tiempo_A_s,tiempo_B_s,ganancia_A_entre_B" > "$raw"
-    for O in O0 O2; do
-        for prog in vector matriz; do
-            local sizes=$T0_VECTOR; [[ $prog == matriz ]] && sizes=$T0_MATRIX
-            for n in $sizes; do
-                g++ -$O -DSIZE="$n" "$MY/tarea0/tarea0_$prog.cpp" -o "$d/bin/t0_${prog}_${O}_$n" >> "$d/compilacion.log" 2>&1 \
-                    || { warn "No compila tarea0_$prog con -$O SIZE=$n (ver tarea0/compilacion.log)"; continue; }
-                for r in $(seq 1 "$T0_REPS"); do
-                    "$d/bin/t0_${prog}_${O}_$n" | awk -v p="$prog" -v o="$O" -v n="$n" -v r="$r" \
-                        '/Elapsed/ { gsub("s$","",$3); t[++i]=$3 } /Gain/ { g=$2 } END { printf "%s,%s,%d,%d,%s,%s,%s\n", p, o, n, r, t[1], t[2], g }' >> "$raw"
-                done
-            done
-        done
-    done
-    rm -rf "$d/bin"
-    awk -F, 'NR > 1 { k = $1 "," $2 "," $3; a[k] += $5; b[k] += $6; c[k]++ ; if (!(k in ord)) { ord[k] = ++m; key[m] = k } }
-             END {
-               printf "%-8s %-4s %-10s %14s %14s %10s\n", "programa", "opt", "size", "A (s)", "B (s)", "A / B";
-               for (j = 1; j <= m; j++) { k = key[j]; split(k, f, ","); A = a[k] / c[k]; B = b[k] / c[k];
-                 printf "%-8s %-4s %-10s %14.6f %14.6f %10.2f\n", f[1], f[2], f[3], A, B, (B > 0 ? A / B : 0) } }' "$raw" > "$d/tabla.txt"
-    {
-        echo "TAREA 0 - media de $T0_REPS repeticiones (tiempos de CPU, clock())"
-        echo "vector: A = push_back sobre un vector vacio;  B = vector creado con el tamano final"
-        echo "matriz: A = recorrido por COLUMNAS;           B = recorrido por FILAS"
-        echo "A / B > 1 significa que B (reservar el tamano / recorrer por filas) es mas rapido."
-        echo
-        cat "$d/tabla.txt"
-        echo
-        echo "Lectura: con -O0 el compilador no optimiza nada y se ve el coste puro de las reasignaciones"
-        echo "(vector) y de los fallos de cache (matriz). Con -O2 la mejora del vector suele ser mayor"
-        echo "(el bucle B se reduce a un relleno de memoria) y la de la matriz depende de si la matriz cabe"
-        echo "en cache: para tamanos pequenos casi no hay diferencia; para tamanos grandes aparece."
-    } > "$d/resumen_tarea0.txt"
-    {
-        cat "$MY/tarea0/cambios_tarea0.txt"
-        local f
-        for f in knn.h knn.cc crossValidation.h crossValidation.cc; do
-            echo; echo "########## diff -u $f (original -> limpio)"
-            diff -u "$ROOT/$f" "$MY/opt/$f"
-        done
-    } > "$d/cambios_tarea0.txt"
-    sed 's/^/   /' "$d/resumen_tarea0.txt"
-    info "Cambios en la biblioteca: $d/cambios_tarea0.txt"
-}
-
 # ---------------------------------------------------------------- grafos ----
 stage_grafos() {
     log "Grafos de flujo (DOT)"
-    local d="$OUT_DIR/grafos" f g
-    mkdir -p "$d"
+    local d="$OUT_DIR/grafos" f
+    rm -rf "$d"; mkdir -p "$d"
     for f in secuencial paso1_datos paso2_3_especulativo; do
         emit "grafos/$f.dot" "$d/$f.dot"
         if command -v dot >/dev/null 2>&1; then
@@ -531,55 +554,88 @@ stage_grafos() {
     done
 }
 
+# ----------------------------------------------------------------- clean ----
+stage_clean() {
+    log "Limpieza"
+    rm -f "$BUILD"/knn_seq* "$BUILD"/knn_mpi* "$BUILD"/gmon* 2>/dev/null
+    rm -rf "$MY"
+    info "Borrados los binarios de $BUILD (el dataset se conserva) y $MY"
+    if [[ -n "$HOSTFILE" ]]; then
+        local h qdir
+        qdir=$(printf '%q' "$BUILD")
+        for h in $(hosts_list); do
+            is_local "$h" && continue
+            ssh -o BatchMode=yes -o ConnectTimeout=5 "$h" "rm -f $qdir/knn_seq* $qdir/knn_mpi* $qdir/gmon*" >/dev/null 2>&1 && info "$h: binarios borrados"
+        done
+    fi
+    if [[ "$CLEAN_RESULTS" == 1 ]]; then
+        rm -rf "$OUT_DIR"
+        info "Borrada la carpeta de resultados $OUT_DIR"
+    else
+        # restos de versiones antiguas del script dentro de los resultados
+        rm -rf "$OUT_DIR/tarea0" 2>/dev/null
+        info "Resultados conservados en $OUT_DIR (CLEAN_RESULTS=1 ./run_all.sh clean para borrarlos tambien)"
+    fi
+}
+
 # ----------------------------------------------------------------- leeme ----
 write_leeme() {
     cat > "$OUT_DIR/LEEME.txt" <<'EOF'
 Contenido de la carpeta de resultados (lo genera run_all.sh)
-  arquitectura.txt     procesador, nucleos, caches y memoria (de esta maquina y de cada nodo)  -> memoria
+  arquitectura.txt     procesador, nucleos, caches, memoria y red (de esta maquina y de cada nodo)  -> memoria
   compilacion.log      ordenes de compilacion y avisos
   nodos.txt            en que nodos arrancan los procesos y si tienen binarios y dataset
-  verificacion.txt     todas las versiones dan exactamente lo mismo que el secuencial?
-  gprof/               perfil_<sabor>_<O>.txt (informes gprof), resumen_gprof.txt, salida_*.txt, gmon_*.out
-                       sabor: orig = codigo del profesor, opt = con las limpiezas de la Tarea 0
+  verificacion.txt     las versiones MPI dan exactamente lo mismo que el secuencial?
+  gprof/               perfiles gprof (-O2) del secuencial y de cada version MPI:
+                         perfil_seq_<O>.txt                  secuencial: perfil plano + grafo de llamadas
+                         perfil_<version>_<O>_total.txt      todos los procesos sumados (perfil plano + grafo de llamadas)
+                         perfil_<version>_<O>_procesos.txt   perfil plano de cada proceso (rango) por separado
+                         resumen_gprof.txt                   CPU de cada proceso y funciones mas costosas
+                         salida_*.txt, gmon_*                salida del programa y datos en bruto de gprof
   resultados.csv       una fila por ejecucion (version, rep, np, tamanos, K, accuracy, tiempos, ...)
   logs/                la salida completa de cada ejecucion
-  resumen.txt          speed-up, eficiencia, Karp-Flatt, comunicacion, cota de Amdahl, efecto de limpiezas
+  resumen.txt          speed-up, eficiencia, Karp-Flatt, comunicacion, cota de Amdahl, consistencia
   speedup.png eficiencia.png tiempos_knn_mpi.png tiempos_versiones.png
-  tarea0/              resumen_tarea0.txt (vector y matriz), cambios_tarea0.txt (que se cambio en la biblioteca)
   grafos/              grafos de flujo: secuencial, paso 1, pasos 2-3 (.dot, .png, .svg)
-Versiones (columna "version" del CSV; sufijo _opt = con limpiezas):
-  knn_seq        secuencial                           knn_mpi_spec   paso 2: funcional + especulativa (estatica)
+Versiones (columna "version" del CSV):
+  knn_seq        secuencial (referencia)              knn_mpi_spec   paso 2: funcional + especulativa (estatica)
   knn_mpi        paso 1: paralelismo de datos         knn_mpi_dyn    paso 3: cola dinamica + ayuda de evaluadores
 EOF
 }
 
 # ------------------------------------------------------------------ main ----
-ALL_STAGES="arch extract build distribute nodos verify gprof bench plots tarea0 grafos"
+ALL_STAGES="arch extract build distribute nodos verify gprof bench plots grafos clean"
+DEFAULT_STAGES="arch build distribute verify gprof bench plots grafos"
 REQUESTED=()
 for a in "$@"; do a=${a//$'\r'/}; [[ -n "$a" ]] && REQUESTED+=("$a"); done
-(( ${#REQUESTED[@]} )) || REQUESTED=(all)
+(( ${#REQUESTED[@]} )) || REQUESTED=(default)
 
 for s in "${REQUESTED[@]}"; do
-    [[ "$s" == all ]] && continue
+    [[ "$s" == default ]] && continue
     [[ " $ALL_STAGES " == *" $s "* ]] || die "Etapa desconocida '$s'. Etapas: $ALL_STAGES"
 done
 
 wanted() {
     local r
-    for r in "${REQUESTED[@]}"; do [[ "$r" == all || "$r" == "$1" ]] && return 0; done
+    for r in "${REQUESTED[@]}"; do
+        [[ "$r" == "$1" ]] && return 0
+        [[ "$r" == default && " $DEFAULT_STAGES " == *" $1 "* ]] && return 0
+    done
     return 1
 }
+
+if wanted clean; then
+    stage_clean
+    exit 0
+fi
 
 mkdir -p "$OUT_DIR"
 T_START=$SECONDS
 for s in $ALL_STAGES; do
-    # 'extract' y 'nodos' ya forman parte de 'build' y 'verify'; en "todo" no se repiten.
-    if [[ "$s" == extract || "$s" == nodos ]]; then
-        [[ " ${REQUESTED[*]} " == *" $s "* ]] || continue
-        [[ "$s" == nodos ]] && wanted verify && continue
-        "stage_$s"
-        continue
-    fi
+    [[ "$s" == clean ]] && continue
+    # 'nodos' ya forma parte de 'verify' y 'extract' de 'build': solo si se piden a mano y sin ellos
+    [[ "$s" == nodos ]] && wanted verify && continue
+    [[ "$s" == extract ]] && wanted build && continue
     wanted "$s" && "stage_$s"
 done
 write_leeme
@@ -623,10 +679,6 @@ exit 0
 #include <limits>
 #include <string>
 #include <vector>
-
-#ifndef FLAVOR
-#define FLAVOR "" // run_all.sh compila la variante con la biblioteca limpia con -DFLAVOR='"_opt"'
-#endif
 
 using namespace knn;
 using namespace mnist;
@@ -758,7 +810,7 @@ int main(int argc, char** argv)
     // version,np,tuning,test,final_train,max_k,folds,best_k,test_acc,total_s,
     // load_s,tune_s,final_s,comm_s,nT,nE,restarts,wasted_s   (nT..wasted_s no aplican aqui)
     char csv[512];
-    std::snprintf(csv, sizeof csv, "CSV,knn_seq" FLAVOR ",1,%zu,%zu,%zu,%u,%u,%d,%.6f,%.6f,%.6f,%.6f,%.6f,0.000000,,,,",
+    std::snprintf(csv, sizeof csv, "CSV,knn_seq,1,%zu,%zu,%zu,%u,%u,%d,%.6f,%.6f,%.6f,%.6f,%.6f,0.000000,,,,",
                   nTuning, nTest, nFinalTrain, maxK, folds, k, accuracy, total, tLoad, tTune, tFinal);
     std::cout<<csv<<std::endl;
 
@@ -810,10 +862,6 @@ int main(int argc, char** argv)
 #include <limits>
 #include <string>
 #include <vector>
-
-#ifndef FLAVOR
-#define FLAVOR "" // run_all.sh compila la variante con la biblioteca limpia con -DFLAVOR='"_opt"'
-#endif
 
 using namespace knn;
 using namespace mnist;
@@ -877,6 +925,9 @@ int main(int argc, char **argv)
     MPI_Init(&argc, &argv);
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank); // identificador de este proceso: 0 .. size-1
+    // Para gprof (binarios compilados con -pg): cada proceso escribe su propio fichero gmon_rank<N>.<pid>
+    // en vez de pisarse todos en gmon.out. En los binarios normales esta variable no se usa.
+    { char gp[32]; std::snprintf(gp, sizeof gp, "gmon_rank%d", rank); setenv("GMON_OUT_PREFIX", gp, 1); }
     MPI_Comm_size(MPI_COMM_WORLD, &size); // número total de procesos
 
     // ---- Parámetros del problema (por defecto, los de main.cc) -------------
@@ -1025,7 +1076,7 @@ int main(int argc, char **argv)
         // version,np,tuning,test,final_train,max_k,folds,best_k,test_acc,total_s,
         // load_s,tune_s,final_s,comm_s,nT,nE,restarts,wasted_s   (nT..wasted_s no aplican aqui)
         char csv[512];
-        std::snprintf(csv, sizeof csv, "CSV,knn_mpi" FLAVOR ",%d,%zu,%zu,%zu,%u,%u,%u,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,,,,",
+        std::snprintf(csv, sizeof csv, "CSV,knn_mpi,%d,%zu,%zu,%zu,%u,%u,%u,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,,,,",
                       size, nTuning, nTest, nFinalTrain, maxK, folds, bestK, totalMatches / (double)nTest,
                       worst[5], worst[0], worst[1], worst[3], worst[2] + worst[4]);
         std::cout << csv << std::endl;
@@ -1110,10 +1161,6 @@ int main(int argc, char **argv)
 #include <string>
 #include <utility>
 #include <vector>
-
-#ifndef FLAVOR
-#define FLAVOR "" // run_all.sh compila la variante con la biblioteca limpia con -DFLAVOR='"_opt"'
-#endif
 
 using namespace knn;
 using namespace mnist;
@@ -1594,6 +1641,9 @@ int main(int argc, char **argv)
     MPI_Init(&argc, &argv);
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    // Para gprof (binarios compilados con -pg): cada proceso escribe su propio fichero gmon_rank<N>.<pid>
+    // en vez de pisarse todos en gmon.out. En los binarios normales esta variable no se usa.
+    { char gp[32]; std::snprintf(gp, sizeof gp, "gmon_rank%d", rank); setenv("GMON_OUT_PREFIX", gp, 1); }
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     if (size < 2)
@@ -1795,7 +1845,7 @@ int main(int argc, char **argv)
 
         // Linea legible por maquina (la recoge run_all.sh). Mismas columnas que knn_mpi;
         // aqui no hay tune_s / final_s / comm_s (las fases se solapan) pero si grupos y reinicios.
-        const std::string version = std::string(dynamic ? "knn_mpi_dyn" : "knn_mpi_spec") + FLAVOR;
+        const std::string version = dynamic ? "knn_mpi_dyn" : "knn_mpi_spec";
         char csv[512];
         std::snprintf(csv, sizeof csv, "CSV,%s,%d,%zu,%zu,%zu,%u,%u,%d,%.6f,%.6f,%.6f,,,,%d,%d,%d,%.6f",
                       version.c_str(), size, nTuning, nTest, nFinalTrain, maxK, folds, finalK,
@@ -1816,30 +1866,27 @@ int main(int argc, char **argv)
 
 Genera:
   resumen.txt            tiempos, speed-up, eficiencia, fraccion serie (Karp-Flatt), peso de la
-                         comunicacion, cota de Amdahl, efecto de las limpiezas de la Tarea 0 y
-                         comprobacion de que todas las versiones dan el mismo resultado
+                         comunicacion, cota de Amdahl y comprobacion de que todas las versiones
+                         dan el mismo resultado
   speedup.png            speed-up frente a procesos (una grafica por tamano) y la recta ideal
   eficiencia.png         eficiencia = speed-up / procesos
   tiempos_knn_mpi.png    reparto del tiempo del paso 1 (carga, ajuste, evaluacion, comunicacion)
   tiempos_versiones.png  tiempo total de cada version (tamano mayor)
 Sin matplotlib solo se genera resumen.txt.
 
-Versiones (columna "version" del CSV; el sufijo _opt = biblioteca con las limpiezas de la Tarea 0):
-  knn_seq        secuencial                      knn_mpi_spec   paso 2: funcional + especulativa
-  knn_mpi        paso 1: paralelismo de datos    knn_mpi_dyn    paso 3: cola dinamica + ayuda
+Versiones (columna "version" del CSV):
+  knn_seq        secuencial (referencia)          knn_mpi_spec   paso 2: funcional + especulativa
+  knn_mpi        paso 1: paralelismo de datos     knn_mpi_dyn    paso 3: cola dinamica + ayuda
 
 Definiciones (T = tiempo total medio de las repeticiones):
-  speed-up(N, p)   = T_secuencial(N) / T_paralelo(N, p)  (mismo N y mismos argumentos). La linea base
-                     es el secuencial del MISMO sabor (orig u opt): asi el speed-up mide solo la
-                     paralelizacion. La columna "vs orig" usa siempre el secuencial original
-                     (ganancia total = limpiezas + paralelismo).
-  eficiencia       = speed-up / p
-  Karp-Flatt       e = (1/S - 1/p) / (1 - 1/p): fraccion serie "efectiva" medida; si crece con p hay
-                     sobrecoste de comunicacion/sincronizacion/desequilibrio, si es constante es
-                     la parte realmente secuencial (ley de Amdahl).
-  Amdahl           la carga del dataset la repite cada proceso, asi que no se acelera. Con
-                     f = carga / T_secuencial, el speed-up maximo teorico es 1 / f. Es una cota
-                     MINIMA de la fraccion secuencial (hay mas partes no paralelizables).
+  speed-up(N, p)  = T_secuencial(N) / T_paralelo(N, p)   (mismo N y mismos argumentos)
+  eficiencia      = speed-up / p
+  Karp-Flatt      e = (1/S - 1/p) / (1 - 1/p): fraccion serie "efectiva" medida. Si crece con p hay
+                  sobrecoste de comunicacion, sincronizacion o desequilibrio; si es constante es
+                  la parte realmente secuencial (ley de Amdahl).
+  Amdahl          la carga del dataset la repite cada proceso, asi que no se acelera. Con
+                  f = carga / T_secuencial, el speed-up maximo teorico es 1 / f. Es una cota
+                  MINIMA de la fraccion secuencial (hay mas partes no paralelizables).
 """
 import csv
 import os
@@ -1853,13 +1900,12 @@ csv_path, out_dir = sys.argv[1], sys.argv[2]
 os.makedirs(out_dir, exist_ok=True)
 
 NAMES = {
-    "knn_seq": "secuencial",
     "knn_mpi": "paso 1: datos",
     "knn_mpi_spec": "paso 2: especulativa",
     "knn_mpi_dyn": "paso 3: dinamica+ayuda",
 }
 COLORS = {"knn_mpi": "#1f77b4", "knn_mpi_spec": "#d62728", "knn_mpi_dyn": "#2ca02c"}
-MPI_BASES = ["knn_mpi", "knn_mpi_spec", "knn_mpi_dyn"]
+MPI = ["knn_mpi", "knn_mpi_spec", "knn_mpi_dyn"]
 
 
 def num(x):
@@ -1869,20 +1915,13 @@ def num(x):
         return None
 
 
-def split_version(v):
-    """'knn_mpi_dyn_opt' -> ('knn_mpi_dyn', 'opt'); 'knn_seq' -> ('knn_seq', 'orig')."""
-    return (v[:-4], "opt") if v.endswith("_opt") else (v, "orig")
-
-
 rows = list(csv.DictReader(open(csv_path, newline="")))
 if not rows:
     sys.exit("resultados.csv esta vacio")
 
-# (base, sabor, N, np) -> filas
-groups = defaultdict(list)
+groups = defaultdict(list)  # (version, N, np) -> filas
 for r in rows:
-    base, fl = split_version(r["version"])
-    groups[(base, fl, int(r["tuning"]), int(r["np"]))].append(r)
+    groups[(r["version"], int(r["tuning"]), int(r["np"]))].append(r)
 
 
 def mean(key, col):
@@ -1890,87 +1929,60 @@ def mean(key, col):
     return st.mean(vals) if vals else None
 
 
-sizes = sorted({k[2] for k in groups})
-flavors = sorted({k[1] for k in groups}, key=lambda f: (f != "orig", f))
-mpi_keys = sorted({(k[0], k[1]) for k in groups if k[0] in MPI_BASES},
-                  key=lambda t: (MPI_BASES.index(t[0]), t[1] != "orig"))
+sizes = sorted({k[1] for k in groups})
+versions = [v for v in MPI if any(k[0] == v for k in groups)]
 
 
-def nps_of(base, fl, n):
-    return sorted(k[3] for k in groups if k[0] == base and k[1] == fl and k[2] == n)
+def nps_of(v, n):
+    return sorted(k[2] for k in groups if k[0] == v and k[1] == n and mean(k, "total_s"))
 
 
-def seq_time(fl, n):
-    return mean(("knn_seq", fl, n, 1), "total_s") if ("knn_seq", fl, n, 1) in groups else None
-
-
-def baseline(fl, n):
-    """Secuencial de referencia para un sabor: el suyo; si no hay, el original; si no, el otro."""
-    for f in (fl, "orig", "opt"):
-        t = seq_time(f, n)
-        if t:
-            return t, f
-    return None, None
-
-
-def label(base, fl):
-    return NAMES[base] + (" [opt]" if fl == "opt" else (" [orig]" if "opt" in flavors else ""))
-
+tseq = {n: mean(("knn_seq", n, 1), "total_s") for n in sizes if ("knn_seq", n, 1) in groups}
 
 # ------------------------------------------------------------------ resumen
 L = []
 L.append("RESUMEN  (tiempos en segundos; media de las repeticiones)")
-L.append("speed-up = T_secuencial / T_paralelo (mismo N, secuencial del mismo sabor);  eficiencia = speed-up / procesos")
-L.append("vs orig = speed-up respecto al secuencial ORIGINAL (incluye el efecto de las limpiezas);  KF = Karp-Flatt")
-L.append("sabor [orig] = biblioteca del profesor tal cual;  [opt] = con las limpiezas de la Tarea 0")
+L.append("speed-up = T_secuencial / T_paralelo (mismo N);  eficiencia = speed-up / procesos;  KF = Karp-Flatt (fraccion serie efectiva)")
 L.append("")
 for n in sizes:
-    any_row = next(r for k, rs in groups.items() if k[2] == n for r in rs)
+    any_row = next(r for k, rs in groups.items() if k[1] == n for r in rs)
     L.append(f"=== N = {n}  (test = {any_row['test']}, entrenamiento final = {any_row['final_train']})")
-    for fl in flavors:
-        t0 = seq_time(fl, n)
-        if t0 is None:
-            continue
-        load = mean(("knn_seq", fl, n, 1), "load_s") or 0.0
-        tune = mean(("knn_seq", fl, n, 1), "tune_s") or 0.0
-        fin = mean(("knn_seq", fl, n, 1), "final_s") or 0.0
-        L.append(f"   secuencial [{fl}]: total {t0:.3f}  (carga {load:.3f}, ajuste {tune:.3f} = {100 * tune / t0:.0f} %, "
+    t0 = tseq.get(n)
+    if t0 is None:
+        L.append("   (sin medida secuencial: no se pueden calcular speed-up ni eficiencia)")
+    else:
+        load = mean(("knn_seq", n, 1), "load_s") or 0.0
+        tune = mean(("knn_seq", n, 1), "tune_s") or 0.0
+        fin = mean(("knn_seq", n, 1), "final_s") or 0.0
+        L.append(f"   secuencial: total {t0:.3f}  (carga {load:.3f}, ajuste {tune:.3f} = {100 * tune / t0:.0f} %, "
                  f"evaluacion final {fin:.3f} = {100 * fin / t0:.0f} %)")
         if load > 0:
             f = load / t0
-            L.append(f"      Amdahl: fraccion secuencial medida (carga replicada) f = {f:.4f}  ->  speed-up maximo teorico <= {1 / f:.1f}")
-    if seq_time("orig", n) and seq_time("opt", n):
-        L.append(f"   efecto de las limpiezas en el secuencial: {seq_time('orig', n):.3f} s -> {seq_time('opt', n):.3f} s "
-                 f"(x{seq_time('orig', n) / seq_time('opt', n):.3f})")
-    L.append(f"   {'version':<30}{'p':>4}{'total':>10}{'speed-up':>10}{'efic.':>7}{'KF':>8}{'vs orig':>9}   notas")
-    t_orig = seq_time("orig", n)
-    for base, fl in mpi_keys:
-        for p in nps_of(base, fl, n):
-            t = mean((base, fl, n, p), "total_s")
-            if not t:
-                continue
-            t0, _ = baseline(fl, n)
+            L.append(f"   Amdahl: fraccion secuencial medida (carga replicada) f = {f:.4f}  ->  speed-up maximo teorico <= {1 / f:.1f}")
+    L.append(f"   {'version':<24}{'p':>4}{'total':>10}{'speed-up':>10}{'efic.':>7}{'KF':>8}   notas")
+    for v in versions:
+        for p in nps_of(v, n):
+            t = mean((v, n, p), "total_s")
             s = (t0 / t) if t0 else None
             e = (s / p) if s else None
             kf = ((1 / s - 1 / p) / (1 - 1 / p)) if (s and p > 1) else None
-            so = (t_orig / t) if t_orig else None
             note = ""
-            if base == "knn_mpi":
-                comm = mean((base, fl, n, p), "comm_s")
+            if v == "knn_mpi":
+                comm = mean((v, n, p), "comm_s")
                 if comm is not None:
                     note = f"comunicacion+espera={comm:.3f}s ({100 * comm / t:.1f} % del total)"
             else:
-                nt, ne = mean((base, fl, n, p), "nT"), mean((base, fl, n, p), "nE")
-                rs, ws = mean((base, fl, n, p), "restarts"), mean((base, fl, n, p), "wasted_s")
+                nt, ne = mean((v, n, p), "nT"), mean((v, n, p), "nE")
+                rs, ws = mean((v, n, p), "restarts"), mean((v, n, p), "wasted_s")
                 if None not in (nt, ne, rs, ws):
                     note = f"ajuste={int(nt)} eval={int(ne)} reinicios={rs:.1f} descartado={ws:.2f}s"
             f2 = lambda x, d=2: (f"{x:.{d}f}" if x is not None else "-")  # noqa: E731
-            L.append(f"   {label(base, fl):<30}{p:>4}{t:>10.3f}{f2(s):>10}{f2(e):>7}{f2(kf, 3):>8}{f2(so):>9}   {note}")
+            L.append(f"   {NAMES[v]:<24}{p:>4}{t:>10.3f}{f2(s):>10}{f2(e):>7}{f2(kf, 3):>8}   {note}")
     L.append("")
 
 L.append("COMPROBACION DE CONSISTENCIA (mejor K y accuracy de test, por tamano; deben ser iguales en TODAS las versiones)")
 for n in sizes:
-    combos = {(r["best_k"], r["test_acc"]) for k, rs in groups.items() if k[2] == n for r in rs}
+    combos = {(r["best_k"], r["test_acc"]) for k, rs in groups.items() if k[1] == n for r in rs}
     state = "OK" if len(combos) == 1 else "AVISO: resultados distintos entre ejecuciones -> " + str(sorted(combos))
     L.append(f"   N={n}: {state}  {sorted(combos)[0] if len(combos) == 1 else ''}")
 text = "\n".join(L) + "\n"
@@ -1990,24 +2002,23 @@ except Exception as exc:  # noqa: BLE001
 
 
 def panel_figure(metric, ylabel, fname, ideal):
-    cols = len(sizes)
-    fig, axes = plt.subplots(1, cols, figsize=(4.8 * cols, 4.1), squeeze=False)
+    fig, axes = plt.subplots(1, len(sizes), figsize=(4.8 * len(sizes), 4.1), squeeze=False)
     for ax, n in zip(axes[0], sizes):
+        t0 = tseq.get(n)
+        if t0 is None:
+            ax.set_title(f"N={n} (sin secuencial)")
+            continue
         allp = set()
-        for base, fl in mpi_keys:
-            t0, _ = baseline(fl, n)
-            ps = [p for p in nps_of(base, fl, n) if mean((base, fl, n, p), "total_s")]
-            if not t0 or not ps:
-                continue
-            ys = [metric(t0 / mean((base, fl, n, p), "total_s"), p) for p in ps]
-            ax.plot(ps, ys, marker="o", label=label(base, fl), color=COLORS[base],
-                    linestyle="-" if fl == "opt" else "--")
-            allp.update(ps)
+        for v in versions:
+            ps = nps_of(v, n)
+            if ps:
+                ax.plot(ps, [metric(t0 / mean((v, n, p), "total_s"), p) for p in ps], marker="o",
+                        label=NAMES[v], color=COLORS[v])
+                allp.update(ps)
         if allp:
             ps = sorted(allp)
             ax.plot(ps, [ideal(p) for p in ps], "k:", linewidth=1, label="ideal")
-        if allp:
-            ax.set_xticks(sorted(allp))
+            ax.set_xticks(ps)
         ax.set_title(f"N = {n}")
         ax.set_xlabel("procesos MPI")
         ax.set_ylabel(ylabel)
@@ -2018,15 +2029,14 @@ def panel_figure(metric, ylabel, fname, ideal):
     plt.close(fig)
 
 
-if mpi_keys and any(seq_time(f, n) for f in flavors for n in sizes):
+if tseq and versions:
     panel_figure(lambda s, p: s, "speed-up", "speedup.png", lambda p: p)
     panel_figure(lambda s, p: s / p, "eficiencia", "eficiencia.png", lambda p: 1.0)
 
-# reparto de tiempo del paso 1 (tamano mayor, sabor opt si existe)
-cand = [(fl, n) for (b, fl) in mpi_keys if b == "knn_mpi" for n in sizes if nps_of("knn_mpi", fl, n)]
-if cand:
-    fl, n = max(cand, key=lambda t: (t[1], t[0] == "opt"))
-    ps = nps_of("knn_mpi", fl, n)
+# reparto de tiempo del paso 1 (tamano mayor)
+if "knn_mpi" in versions:
+    n = max(n for n in sizes if nps_of("knn_mpi", n))
+    ps = nps_of("knn_mpi", n)
     parts = [
         ("carga (replicada)", "load_s", "#9aa5b1"),
         ("ajuste: calculo", "tune_s", "#1f77b4"),
@@ -2036,10 +2046,10 @@ if cand:
     fig, ax = plt.subplots(figsize=(6.5, 4))
     bottom = [0.0] * len(ps)
     for lab, col, color in parts:
-        vals = [mean(("knn_mpi", fl, n, p), col) or 0.0 for p in ps]
+        vals = [mean(("knn_mpi", n, p), col) or 0.0 for p in ps]
         ax.bar([str(p) for p in ps], vals, bottom=bottom, label=lab, color=color)
         bottom = [b + v for b, v in zip(bottom, vals)]
-    ax.set_title(f"Paso 1: reparto del tiempo (N = {n}, {fl}); cada fase = maximo entre procesos")
+    ax.set_title(f"Paso 1: reparto del tiempo (N = {n}); cada fase = maximo entre procesos")
     ax.title.set_fontsize(9)
     ax.set_xlabel("procesos MPI")
     ax.set_ylabel("segundos")
@@ -2049,18 +2059,15 @@ if cand:
     plt.close(fig)
 
 # tiempo total de cada version (tamano mayor)
-if mpi_keys:
+if versions:
     n = max(sizes)
     fig, ax = plt.subplots(figsize=(6.5, 4))
-    for base, fl in mpi_keys:
-        ps = [p for p in nps_of(base, fl, n) if mean((base, fl, n, p), "total_s")]
+    for v in versions:
+        ps = nps_of(v, n)
         if ps:
-            ax.plot(ps, [mean((base, fl, n, p), "total_s") for p in ps], marker="o", label=label(base, fl),
-                    color=COLORS[base], linestyle="-" if fl == "opt" else "--")
-    for fl in flavors:
-        t0 = seq_time(fl, n)
-        if t0:
-            ax.axhline(t0, color="gray", linestyle=":" if fl == "opt" else "-.", linewidth=1, label=f"secuencial [{fl}]")
+            ax.plot(ps, [mean((v, n, p), "total_s") for p in ps], marker="o", label=NAMES[v], color=COLORS[v])
+    if tseq.get(n):
+        ax.axhline(tseq[n], color="gray", linestyle=":", linewidth=1, label="secuencial")
     ax.set_title(f"Tiempo total (N = {n})")
     ax.set_xlabel("procesos MPI")
     ax.set_ylabel("segundos")
@@ -2072,446 +2079,6 @@ if mpi_keys:
 
 print("Graficas guardadas en", out_dir)
 #@@END graficas.py
-#@@BEGIN opt/knn.h
-#ifndef __KNN_H
-#define __KNN_H
-
-// VERSION LIMPIA (Tarea 0) de knn.h. Mismo interfaz y mismos resultados que el original.
-// Cambio: el constructor copia el vector de entrenamiento de una sola vez (reserva y copia)
-// en lugar de hacer push_back muestra a muestra, que obliga al vector a crecer y recolocarse.
-
-#include "sample.h"
-
-#include <vector>
-
-namespace knn
-{
-    /// <summary>
-    /// K-Nearest Neighbors classifier implementation.
-    /// </summary>
-    class KNN
-    {
-        public:
-            KNN(const std::vector<TSample> &train, int k=1) : train(train), k(k) {}
-
-            int classify(const TSample &test) const;
-
-            double classifyAndEvaluate(const std::vector<TSample> &test, std::vector<int> &labels) const;
-
-        private:
-            /// <summary>
-            /// The training data samples.
-            /// </summary>
-            std::vector<TSample> train;
-
-            /// <summary>
-            /// The k parameter.
-            /// </summary>
-            int k;
-    };
-}
-
-#endif
-#@@END opt/knn.h
-#@@BEGIN opt/knn.cc
-// VERSION LIMPIA (Tarea 0) de knn.cc. Mismos resultados que el original, bit a bit:
-// no se cambia ni el calculo de distancias, ni el orden de los candidatos, ni el std::sort
-// (otro algoritmo de seleccion podria romper los empates de forma distinta).
-// Cambios, todos de "gastos generales" que no se pueden paralelizar ni aportan nada:
-//  1. classify(): el vector de resultados se reserva una vez (y se reutiliza entre llamadas)
-//     en vez de crecer con push_back en cada clasificacion (reasignaciones y copias).
-//  2. maxVotesLabel(): recibe el mapa por referencia constante (antes lo copiaba entero).
-//  3. classifyAndEvaluate(): se elimina el cout + flush por CADA muestra (E/S en el bucle
-//     caliente; con varios procesos MPI ademas mezclaria las salidas) y se reserva 'labels'.
-
-#include "knn.h"
-#include "mnist.h"
-
-#include <algorithm>
-#include <stdexcept>
-#include <cmath>
-#include <iostream>
-#include <map>
-#include <vector>
-
-using namespace knn;
-
-float euclidean(const TSample &a, const TSample &b)
-{
-    if (a.image.rows != b.image.rows || a.image.cols != b.image.cols)
-        throw std::invalid_argument("Image dimensions differ");
-    float sum = 0.0f;
-    const float *imageA = a.image.pixels.data();
-    const float *imageB = b.image.pixels.data();
-
-    for(int i=0;i<a.image.rows*a.image.cols;i++)
-    {
-    	float diff = imageA[i] - imageB[i];
-        sum += diff * diff;
-    }
-
-    return std::sqrt(sum);
-}
-
-typedef struct KNNResult
-{
-    KNNResult()
-    {
-        this->label = 0;
-        this->distance = 0.0;
-    };
-
-    KNNResult(int label, float distance)
-    {
-        this->label = label;
-        this->distance = distance;
-    };
-
-    KNNResult(const TSample &testSample, const TSample &trainingSample)
-    {
-        this->label = trainingSample.label;
-        this->distance = euclidean(testSample, trainingSample);
-    };
-
-    bool operator<(const KNNResult &b) const
-    {
-        return this->distance < b.distance;
-    }
-
-    int label;
-    float distance;
-}KNNResult;
-
-std::map<int, int> histogram(const std::vector<KNNResult> &results, int k)
-{
-    std::map<int, int> votes;
-    for(int i=0;i<k;i++)
-    {
-        votes[results[i].label]++;
-    }
-
-    return votes;
-}
-
-// (limpieza 2) por referencia constante
-int maxVotesLabel(const std::map<int, int> &histogram)
-{
-    int maxVotes = 0;
-    int maxLabel = 0;
-    std::map<int, int>::const_iterator itr;
-    for (itr = histogram.begin(); itr != histogram.end(); ++itr) {
-        if(itr->second > maxVotes) {
-            maxVotes = itr->second;
-            maxLabel = itr->first;
-        }
-    }
-
-    return maxLabel;
-}
-
-int KNN::classify(const TSample &test) const
-{
-    if (k < 1 || static_cast<std::size_t>(k) > train.size())
-        throw std::invalid_argument("k must be between 1 and the training size");
-
-    // (limpieza 1) un unico buffer por proceso, reservado una vez y reutilizado
-    static thread_local std::vector<KNNResult> results;
-    results.clear();
-    results.reserve(this->train.size());
-    for(std::size_t i=0;i<this->train.size();i++)
-    {
-        results.emplace_back(test, this->train[i]);
-    }
-
-    std::sort(results.begin(), results.end());
-
-    return maxVotesLabel(histogram(results, this->k));
-}
-
-double KNN::classifyAndEvaluate(const std::vector<TSample> &test, std::vector<int> &labels) const
-{
-    if (test.empty()) throw std::invalid_argument("Test set is empty");
-    int matches = 0;
-    labels.reserve(labels.size() + test.size()); // (limpieza 3)
-    for(std::size_t i=0;i<test.size();i++)
-    {
-        // (limpieza 3) sin cout << i << "/" << ... << std::flush por muestra
-        int label = this->classify(test[i]);
-        labels.push_back(label);
-
-        if(label == test[i].label) matches++;
-    }
-
-    return matches / (double)test.size();
-}
-#@@END opt/knn.cc
-#@@BEGIN opt/crossValidation.h
-#ifndef __CROSS_VALIDATION_H__
-#define __CROSS_VALIDATION_H__
-
-// VERSION LIMPIA (Tarea 0) de crossValidation.h. Mismo interfaz y resultados que el original.
-// Cambio: el constructor copia el dataset de una vez (en vez de push_back uno a uno).
-
-#include "sample.h"
-
-#include <vector>
-#include <stdexcept>
-#include <string>
-
-namespace crossValidation
-{
-    class CrossValidation
-    {
-        public:
-            CrossValidation(const std::vector<TSample> &dataset, unsigned int folds)
-            {
-                if (folds < 2 || folds > dataset.size())
-                    throw std::invalid_argument("folds must be between 2 and dataset size");
-                this->dataset = dataset;
-                this->folds = folds;
-            };
-
-            double validate(unsigned int k) const;
-
-            static CrossValidation NFold(const std::vector<TSample> &dataset, unsigned int folds)
-            {
-                return CrossValidation(dataset, folds);
-            };
-
-            static CrossValidation LeaveOneOut(const std::vector<TSample> &dataset)
-            {
-                return CrossValidation(dataset, dataset.size());
-            };
-
-            std::string getName() const;
-
-        private:
-            std::vector<TSample> dataset;
-            unsigned int folds;
-
-            void splitDataset(std::vector<TSample> &train, std::vector<TSample> &validation, unsigned int fold) const;
-    };
-}
-
-#endif
-#@@END opt/crossValidation.h
-#@@BEGIN opt/crossValidation.cc
-// VERSION LIMPIA (Tarea 0) de crossValidation.cc. Mismos resultados y mismas salidas que el original.
-// Cambio: splitDataset() reserva el tamano final de 'train' y 'validation' (antes crecian con
-// push_back, recolocando y copiando miles de muestras cada vez que se llama; se llama una vez
-// por cada par (k, fold)).
-
-#include "crossValidation.h"
-#include "sample.h"
-#include "knn.h"
-
-#include "timer.h"
-
-#include <vector>
-#include <iostream>
-#include <cassert>
-#include <algorithm>
-#include <string>
-#include <sstream>
-
-using namespace knn;
-using namespace crossValidation;
-
-double CrossValidation::validate(unsigned int k) const
-{
-    double accuracy = 0.0;
-    std::cout<<"Starting "<<this->getName()<<std::endl;
-    for(int fold=0;fold<this->folds;fold++)
-    {
-        std::vector<TSample> train, test;
-        this->splitDataset(train, test, fold);
-
-        std::cout<<"Testing fold "<<fold<<std::endl;
-        double start = elapsedTime();
-        KNN knn(train, k);
-        std::vector<int> labels;
-        double acc = knn.classifyAndEvaluate(test, labels);
-        accuracy += acc;
-        std::cout<<"Fold: "<<fold<<" Accuracy: "<<acc * 100<<"% completed in "<<elapsedTime() - start<<" seconds"<<std::endl;
-    }
-
-    return accuracy /= this->folds;
-}
-
-void CrossValidation::splitDataset(std::vector<TSample> &train, std::vector<TSample> &validation, unsigned int fold) const
-{
-    assert(fold < this->folds && "Invalid fold");
-
-    int start = this->dataset.size() * fold / this->folds;
-    int end = this->dataset.size() * (fold + 1) / this->folds;
-
-    train.reserve(this->dataset.size() - (end - start));
-    validation.reserve(end - start);
-    for(int i=0;i<this->dataset.size();i++)
-    {
-        if(i<start || i>=end)
-            train.push_back(this->dataset[i]);
-        else
-            validation.push_back(this->dataset[i]);
-    }
-}
-
-std::string CrossValidation::getName() const
-{
-    std::stringstream ss("");
-    if(this->folds < this->dataset.size())
-        ss<<folds<<"-Folds Cross Validation";
-    else
-        ss<<"leave-one-out Cross Validation";
-
-    return ss.str();
-}
-#@@END opt/crossValidation.cc
-#@@BEGIN tarea0/tarea0_vector.cpp
-// Tarea 0 (1/2): vector dinamico con push_back (A) frente a vector con tamano fijo (B).
-// Misma logica que el codigo del enunciado. Cambios minimos: SIZE se puede fijar con -DSIZE=...
-// y se imprime una suma de comprobacion para que el compilador (-O2) no elimine los bucles.
-// Compilar: g++ -O0|-O2 -DSIZE=1000000 tarea0_vector.cpp -o tarea0_vector
-#include <iostream>
-#include <vector>
-#include <ctime>
-
-#ifndef SIZE
-#define SIZE 1000000
-#endif
-
-using namespace std;
-
-int main()
-{
-    // A:
-    clock_t begin = clock();
-    // declaramos un vector sin inicializar.
-    std::vector<int> a;
-    // usamos push_back para anadir cada elemento.
-    for(int i=0;i<SIZE;i++)
-    {
-        a.push_back(i);
-    }
-    double aTime = double(clock() - begin) / CLOCKS_PER_SEC;
-    cout<<"Elapsed time: "<<aTime<<"s"<<endl;
-
-    // B:
-    begin = clock();
-    // declaramos un vector inicializado al tamano requerido.
-    std::vector<int> b(SIZE);
-    for(int i=0;i<SIZE;i++)
-    {
-        b[i] = i;
-    }
-    double bTime = double(clock() - begin) / CLOCKS_PER_SEC;
-    cout<<"Elapsed time: "<<bTime<<"s"<<endl;
-    cout<<"Gain: "<<aTime/bTime<<endl;
-    cout<<"Check: "<<(a[SIZE-1] + b[SIZE-1])<<endl;
-}
-#@@END tarea0/tarea0_vector.cpp
-#@@BEGIN tarea0/tarea0_matriz.cpp
-// Tarea 0 (2/2): recorrido de una matriz por columnas (A) frente a por filas (B).
-// Misma logica que el codigo del enunciado. Cambios minimos: SIZE se fija con -DSIZE=...; las
-// matrices son estaticas (en el enunciado estan en la pila y con SIZE grande la desbordan) y se
-// imprime una suma de comprobacion para que el compilador (-O2) no elimine los bucles.
-// Compilar: g++ -O0|-O2 -DSIZE=2000 tarea0_matriz.cpp -o tarea0_matriz
-#include <iostream>
-#include <vector>
-#include <ctime>
-
-#ifndef SIZE
-#define SIZE 1000
-#endif
-
-using namespace std;
-
-static int a[SIZE][SIZE];
-static int b[SIZE][SIZE];
-
-int main()
-{
-    // A: una matriz en C se almacena como un array de una unica dimension por filas.
-    // Si la recorremos por columnas visitamos las celdas en el orden 1 4 7 2 5 8 3 6 9 ...
-    clock_t begin = clock();
-    for(int i=0;i<SIZE;i++)
-    {
-        for(int j=0;j<SIZE;j++)
-            a[j][i] = i+j;
-    }
-    double aTime = double(clock() - begin) / CLOCKS_PER_SEC;
-    cout<<"Elapsed time: "<<aTime<<"s"<<endl;
-
-    // B: por filas visitamos las celdas en el orden 1 2 3 4 5 6 7 8 9 ...
-    begin = clock();
-    for(int i=0;i<SIZE;i++)
-    {
-        for(int j=0;j<SIZE;j++)
-            b[i][j] = i+j;
-    }
-    double bTime = double(clock() - begin) / CLOCKS_PER_SEC;
-    cout<<"Elapsed time: "<<bTime<<"s"<<endl;
-    cout<<"Gain: "<<aTime/bTime<<endl;
-    cout<<"Check: "<<(a[SIZE-1][SIZE-1] + b[SIZE-1][SIZE-1])<<endl;
-}
-#@@END tarea0/tarea0_matriz.cpp
-#@@BEGIN tarea0/cambios_tarea0.txt
-TAREA 0 APLICADA AL PROGRAMA kNN: QUE SE HA CAMBIADO (Y QUE NO) EN LA BIBLIOTECA
-==============================================================================
-
-La Tarea 0 del enunciado ensena dos ideas:
-  (1) un std::vector que crece con push_back se reasigna y copia varias veces; si se conoce el
-      tamano, es mas rapido reservarlo (reserve / constructor con tamano) y escribir directamente;
-  (2) una matriz se guarda por filas, asi que recorrerla por filas (posiciones contiguas) aprovecha
-      la cache y por columnas no.
-Los programas tarea0_vector.cpp y tarea0_matriz.cpp (resultados en tarea0/resumen_tarea0.txt)
-miden ambos efectos con -O0 y -O2 y distintos tamanos.
-
-Se han buscado esas mismas situaciones en el codigo del profesor y se han corregido SOLO las que
-no cambian el resultado. Las versiones originales estan en la carpeta del proyecto; las limpias se
-extraen en mpi_src/opt/ y se compilan con el sufijo _opt (knn_seq_opt, knn_mpi_opt, ...). Asi
-se pueden comparar los dos sabores (SEQ_FLAVORS / MPI_FLAVORS en run_all.sh).
-
-CAMBIOS (todos reducen "gastos generales"; ninguno altera el calculo)
-  knn.h
-     - El constructor de KNN copiaba el vector de entrenamiento muestra a muestra con push_back
-       (el vector crecia y se recolocaba). Ahora lo copia de golpe en la lista de inicializacion.
-       Idea (1) de la Tarea 0.
-  knn.cc
-     - classify(): el vector de resultados (uno por muestra de entrenamiento) se reserva una vez
-       y se reutiliza entre llamadas, en vez de crecer con push_back en cada clasificacion.
-       Idea (1) de la Tarea 0.
-     - maxVotesLabel(): recibe el std::map por referencia constante (antes se copiaba entero en
-       cada llamada).
-     - classifyAndEvaluate(): se elimina el cout + flush por CADA muestra de test (salida por
-       pantalla dentro del bucle caliente; con MPI ademas mezclaria la salida de los procesos) y
-       se reserva el vector de etiquetas.
-  crossValidation.cc / crossValidation.h
-     - splitDataset() reserva el tamano final de los vectores de entrenamiento y validacion (se
-       llama una vez por cada par (k, fold)). El constructor asigna el dataset directamente.
-     - Se quitan comentarios de documentacion (no afecta al codigo).
-
-LO QUE NO SE HA CAMBIADO A PROPOSITO
-  - El calculo de la distancia (se mantiene el std::sqrt).
-  - El std::sort de TODAS las distancias. Sustituirlo por una seleccion parcial (nth_element /
-    partial_sort) sera mucho mas rapido, pero NO es una limpieza: cuando hay empates de distancia
-    el orden de los candidatos cambia y puede cambiar el K elegido o la accuracy. Se deja fuera para
-    poder demostrar que TODAS las versiones dan exactamente el mismo resultado que el original.
-    Es una optimizacion algoritmica que conviene mencionar en la memoria como trabajo futuro.
-  - El recorrido de las imagenes ya es contiguo (imagen aplanada, de principio a fin): no hay
-    recorridos por columnas que corregir (idea (2) de la Tarea 0 ya se cumple).
-
-COMPROBACION
-  verificacion.txt demuestra que knn_seq, knn_seq_opt y todas las versiones MPI (de ambos
-  sabores) producen las mismas lineas "K: ... Accuracy", "Best k" y "Test accuracy". La ganancia
-  esperada es pequena (segun gprof, ~75-80 % del tiempo esta en euclidean() y el resto en la
-  ordenacion y la copia de muestras, que no se tocan); sirve
-  para tener una linea base secuencial limpia y para no paralelizar sobrecostes que se pueden
-  eliminar sin mas.
-
-A continuacion se incluye la diferencia exacta (diff -u) entre cada fichero original y el limpio.
-==============================================================================
-#@@END tarea0/cambios_tarea0.txt
 #@@BEGIN grafos/secuencial.dot
 // Grafo de control de flujo de la solucion SECUENCIAL (main.cc / knn.cc / crossValidation.cc)
 digraph secuencial {
@@ -2597,7 +2164,7 @@ digraph paso1 {
 #@@BEGIN grafos/paso2_3_especulativo.dot
 // Solucion paralela PASOS 2 y 3: paralelismo funcional + ejecucion especulativa
 digraph especulativo {
-  rankdir=LR; nodesep=0.4; ranksep=0.7; compound=true;
+  rankdir=TB; nodesep=0.5; ranksep=0.6; compound=true;
   node [shape=box, fontname="Helvetica", fontsize=10, style=rounded];
   edge [fontname="Helvetica", fontsize=9];
 

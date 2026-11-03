@@ -1,4 +1,4 @@
-Referencia: knn_seq (original, codigo del profesor) con maxK=10 folds=5 N=1000 test=500 entrenamiento_final=3000
+Referencia: knn_seq (secuencial) con maxK=10 folds=5 N=1000 test=500 entrenamiento_final=3000
 K: 1 Accuracy: 88.5%
 K: 2 Accuracy: 87.4%
 K: 3 Accuracy: 87.7%
@@ -12,25 +12,14 @@ K: 10 Accuracy: 84.5%
 Best k: 1
 Test accuracy: 0.93
 
-knn_seq_opt (secuencial limpio) OK
-knn_mpi np=1               OK
-knn_mpi np=2               OK
-knn_mpi_spec np=2          OK
-knn_mpi_dyn np=2           OK
-knn_mpi np=3               OK
-knn_mpi_spec np=3          OK
-knn_mpi_dyn np=3           OK
-knn_mpi np=4               OK
-knn_mpi_spec np=4          OK
-knn_mpi_dyn np=4           OK
-knn_mpi_opt np=1           OK
-knn_mpi_opt np=2           OK
-knn_mpi_spec_opt np=2      OK
-knn_mpi_dyn_opt np=2       OK
-knn_mpi_opt np=3           OK
-knn_mpi_spec_opt np=3      OK
-knn_mpi_dyn_opt np=3       OK
-knn_mpi_opt np=4           OK
-knn_mpi_spec_opt np=4      OK
-knn_mpi_dyn_opt np=4       OK
+knn_mpi        np=1   OK
+knn_mpi        np=2   OK
+knn_mpi_spec   np=2   OK
+knn_mpi_dyn    np=2   OK
+knn_mpi        np=3   OK
+knn_mpi_spec   np=3   OK
+knn_mpi_dyn    np=3   OK
+knn_mpi        np=4   OK
+knn_mpi_spec   np=4   OK
+knn_mpi_dyn    np=4   OK
 RESULTADO: todas las versiones coinciden con el secuencial

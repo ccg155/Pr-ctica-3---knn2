@@ -31,10 +31,6 @@
 #include <string>
 #include <vector>
 
-#ifndef FLAVOR
-#define FLAVOR "" // run_all.sh compila la variante con la biblioteca limpia con -DFLAVOR='"_opt"'
-#endif
-
 using namespace knn;
 using namespace mnist;
 using namespace crossValidation;
@@ -165,7 +161,7 @@ int main(int argc, char** argv)
     // version,np,tuning,test,final_train,max_k,folds,best_k,test_acc,total_s,
     // load_s,tune_s,final_s,comm_s,nT,nE,restarts,wasted_s   (nT..wasted_s no aplican aqui)
     char csv[512];
-    std::snprintf(csv, sizeof csv, "CSV,knn_seq" FLAVOR ",1,%zu,%zu,%zu,%u,%u,%d,%.6f,%.6f,%.6f,%.6f,%.6f,0.000000,,,,",
+    std::snprintf(csv, sizeof csv, "CSV,knn_seq,1,%zu,%zu,%zu,%u,%u,%d,%.6f,%.6f,%.6f,%.6f,%.6f,0.000000,,,,",
                   nTuning, nTest, nFinalTrain, maxK, folds, k, accuracy, total, tLoad, tTune, tFinal);
     std::cout<<csv<<std::endl;
 
