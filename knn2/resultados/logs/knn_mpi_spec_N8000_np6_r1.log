@@ -13,17 +13,17 @@ Best k: 3
 Test accuracy: 0.95375
 Evolucion del mejor K conocido (segundos desde el inicio):
   t=0.000  K inicial supuesto = 1
-  t=3.077  nuevo mejor K = 1
-  t=7.093  nuevo mejor K = 3
-  t=20.865  ajuste completo, K definitivo = 3
-Reinicios de la evaluacion (lider): 1, trabajo descartado (suma de evaluadores): 6.762 s
+  t=3.195  nuevo mejor K = 1
+  t=7.391  nuevo mejor K = 3
+  t=22.433  ajuste completo, K definitivo = 3
+Reinicios de la evaluacion (lider): 1, trabajo descartado (suma de evaluadores): 7.039 s
 Por proceso (segundos):
-  proceso 0 [ajuste]      termina a t=20.689  tareas=10  calculo=20.356
-  proceso 1 [ajuste]      termina a t=20.384  tareas=10  calculo=20.050
-  proceso 2 [ajuste]      termina a t=19.762  tareas=10  calculo=19.430
-  proceso 3 [ajuste]      termina a t=19.783  tareas=10  calculo=19.451
-  proceso 4 [ajuste]      termina a t=20.107  tareas=10  calculo=19.774
-  proceso 5 [evaluacion]  termina a t=24.723  evaluacion=24.389 (descartado=6.762)  espera=0.000  reinicios=1
-Carga del dataset (replicada, maximo): 0.326
-Total elapsed time 24.723 seconds
-CSV,knn_mpi_spec,6,8000,4000,24000,10,5,3,0.953750,24.722890,0.325510,,,,5,1,1,6.761907
+  proceso 0 [ajuste]      termina a t=21.974  tareas=10  calculo=21.623
+  proceso 1 [ajuste]      termina a t=21.737  tareas=10  calculo=21.386
+  proceso 2 [ajuste]      termina a t=21.922  tareas=10  calculo=21.570
+  proceso 3 [ajuste]      termina a t=21.815  tareas=10  calculo=21.464
+  proceso 4 [ajuste]      termina a t=21.826  tareas=10  calculo=21.474
+  proceso 5 [evaluacion]  termina a t=25.859  evaluacion=25.502 (descartado=7.039)  espera=0.000  reinicios=1
+Carga del dataset (replicada, maximo): 0.341
+Total elapsed time 25.859 seconds
+CSV,knn_mpi_spec,6,8000,4000,24000,10,5,3,0.953750,25.859246,0.340582,,,,5,1,1,7.038800

@@ -10,6 +10,9 @@ grep -q "$(printf '\r')" "$0" 2>/dev/null && sed -i 's/\r$//' "$0" && exec bash 
 #     ./run_all.sh                       # todo: compila, verifica, perfila (gprof), mide y dibuja
 #     HOSTFILE=hosts.txt SIZES="4000 8000 20000" NPS="1 2 4 8 12 16" REPS=3 ./run_all.sh
 #
+# Funciona con MPICH (mpiexec/Hydra) y con Open MPI: detecta cual hay instalado y usa las opciones de
+# mpirun y el formato de hostfile de cada uno (se puede forzar con MPI_IMPL=mpich o MPI_IMPL=ompi).
+#
 # Solo se prueban las versiones optimizadas (compiladas con -O2): el secuencial como referencia
 # y las tres versiones MPI (paso 1: paralelismo de datos; paso 2: paralelismo funcional con
 # ejecucion especulativa; paso 3: lo mismo con cola de tareas dinamica y ayuda de los evaluadores).
@@ -44,8 +47,12 @@ grep -q "$(printf '\r')" "$0" 2>/dev/null && sed -i 's/\r$//' "$0" && exec bash 
 #   NPS="1 2 4 8"           numeros de procesos MPI. Por defecto: automatico segun los huecos
 #                           (slots=) del HOSTFILE o los nucleos de esta maquina (1 2 3 4 6 8 12 ...).
 #   REPS=1                  repeticiones de cada medida (recomendado 3 para los resultados finales)
-#   HOSTFILE=hosts.txt      fichero de hosts de MPI (una linea por ordenador: "nombre slots=4")
-#   MPI_EXTRA=""            opciones extra de mpirun (p. ej. "--map-by node --mca btl_tcp_if_include eth0")
+#   HOSTFILE=hosts.txt      fichero de hosts (una linea por ordenador). Vale "nombre" a secas (como en el
+#                           enunciado), "nombre slots=4" (Open MPI) o "nombre:4" (MPICH)
+#   MPI_IMPL=               mpich | ompi (por defecto se detecta con 'mpirun --version')
+#   MPI_EXTRA=""            opciones extra de mpirun (dependen de la implementacion; p. ej. en Open MPI
+#                           "--map-by node --mca btl_tcp_if_include eth0")
+#   FORCE=0                 con FORCE=1 las mediciones siguen aunque la verificacion falle
 #   BENCH_VERSIONS="knn_mpi knn_mpi_spec knn_mpi_dyn"   que versiones medir (paso 1, paso 2, paso 3)
 #   PROF_N=2000  PROF_NP=<min(4,slots)>   tamano N y numero de procesos con los que se pasa gprof
 #   GPROF_LEVELS="O2"       niveles de optimizacion del perfilado ("O0 O2" para los dos);  GPROF_SEQ=1  perfila
@@ -77,6 +84,8 @@ MAXK=${MAXK:-10}
 FOLDS=${FOLDS:-5}
 HOSTFILE=${HOSTFILE:-}
 MPI_EXTRA=${MPI_EXTRA:-}
+MPI_IMPL=${MPI_IMPL:-}
+FORCE=${FORCE:-0}
 BENCH_VERSIONS=${BENCH_VERSIONS:-"knn_mpi knn_mpi_spec knn_mpi_dyn"}
 APPEND=${APPEND:-0}
 OUT=${OUT:-resultados}
@@ -98,6 +107,16 @@ fi
 # Dentro de contenedores se suele ser root: Open MPI lo rechaza salvo que se confirme.
 if [[ "$(id -u)" == 0 ]]; then export OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1; fi
 
+# Implementacion de MPI: ompi (Open MPI) o mpich (MPICH/Hydra, tambien Intel MPI).
+if [[ -z "$MPI_IMPL" ]]; then
+    if command -v mpirun >/dev/null 2>&1 && ! mpirun --version 2>&1 | grep -qiE 'open ?mpi|open-rte|orte'; then
+        MPI_IMPL=mpich
+    else
+        MPI_IMPL=ompi
+    fi
+fi
+case "$MPI_IMPL" in mpich|ompi) ;; *) echo "[ERROR] MPI_IMPL debe ser mpich u ompi (has puesto '$MPI_IMPL')" >&2; exit 1 ;; esac
+
 CSV_HEADER="version,rep,np,tuning,test,final_train,max_k,folds,best_k,test_acc,total_s,load_s,tune_s,final_s,comm_s,nT,nE,restarts,wasted_s"
 
 log()  { printf '\n== %s ==\n' "$*"; }
@@ -105,17 +124,60 @@ info() { printf '   %s\n' "$*"; }
 warn() { printf '   [AVISO] %s\n' "$*" >&2; }
 die()  { printf '[ERROR] %s\n' "$*" >&2; exit 1; }
 
-hosts_list() { awk '!/^[[:space:]]*(#|$)/ {print $1}' "$HOSTFILE" | sort -u; }
-is_local() { [[ "$1" == "$(hostname)" || "$1" == localhost || "$1" == 127.0.0.1 ]]; }
+is_local() { [[ "$1" == localhost || "$1" == 127.0.0.1 || "$1" == "$(hostname)" || "${1%%.*}" == "$(hostname -s 2>/dev/null)" ]]; }
+
+# Lee el fichero de hosts (formas admitidas: "nodo", "nodo slots=4", "nodo:4"; si un nodo sale en varias
+# lineas se juntan). Imprime una linea por ordenador: "nodo huecos_indicados lineas_sin_huecos".
+hosts_summary() {
+    [[ -n "$HOSTFILE" ]] || return 0
+    awk '
+        !/^[[:space:]]*(#|$)/ {
+            h = $1; n = -1
+            if (h ~ /:[0-9]+$/) { n = substr(h, index(h, ":") + 1) + 0; h = substr(h, 1, index(h, ":") - 1) }
+            for (i = 2; i <= NF; i++) {
+                if ($i ~ /^slots=[0-9]+$/) n = substr($i, 7) + 0
+                else if (i == 2 && $i ~ /^[0-9]+$/) n = $i + 0
+            }
+            if (!(h in seen)) { seen[h] = 1; ord[++k] = h }
+            if (n >= 0) ex[h] += n; else pl[h]++
+        }
+        END { for (i = 1; i <= k; i++) print ord[i], ex[ord[i]] + 0, pl[ord[i]] + 0 }' "$HOSTFILE"
+}
+hosts_list() { hosts_summary | awk '{print $1}'; }
+
+# Nucleos de un nodo (por ssh si no es este equipo); 1 si no se puede saber.
+node_cores() {
+    local h=$1 c
+    if is_local "$h"; then c=$(nproc 2>/dev/null)
+    else c=$(ssh -n -o BatchMode=yes -o ConnectTimeout=3 "$h" nproc 2>/dev/null); fi
+    [[ "$c" =~ ^[0-9]+$ ]] && (( c >= 1 )) || c=1
+    echo "$c"
+}
+
+# MPICH (Hydra) no entiende el hostfile de Open MPI ("nodo slots=4"): se le pasa uno temporal "nodo:huecos".
+# Sin huecos indicados cada linea cuenta 1, asi los procesos se reparten entre todos los ordenadores.
+HYDRA_HF=""
+if [[ -n "$HOSTFILE" && "$MPI_IMPL" == mpich ]]; then
+    HYDRA_HF="$(mktemp "${TMPDIR:-/tmp}/hosts_mpich.XXXXXX")"
+    trap 'rm -f "$HYDRA_HF"' EXIT
+    hosts_summary | awk '{ n = $2 + $3; if (n < 1) n = 1; print $1 ":" n }' > "$HYDRA_HF"
+fi
 
 # Tamanos derivados de N (con los topes del dataset MNIST: 60000 train, 10000 test).
 test_of()  { local t=$(( $1 / 2 )); (( t > 10000 )) && t=10000; echo "$t"; }
 final_of() { local f=$(( 3 * $1 )); (( f > 60000 )) && f=60000; echo "$f"; }
 
-# Huecos de procesos disponibles: suma de slots= del HOSTFILE o nucleos de esta maquina.
+# Procesos que caben: huecos indicados en el HOSTFILE (si un nodo no los indica, sus nucleos) o nucleos de esta maquina.
 slots_total() {
     if [[ -n "$HOSTFILE" ]]; then
-        awk '!/^[[:space:]]*(#|$)/ { n=1; for (i=2;i<=NF;i++) if ($i ~ /^slots=/) { split($i,a,"="); n=a[2] } s+=n } END { print s+0 }' "$HOSTFILE"
+        local h ex pl n s=0
+        while read -r h ex pl; do
+            if (( ex + pl == 0 )); then n=1
+            elif (( ex == 0 && pl == 1 )); then n=$(node_cores "$h")
+            else n=$(( ex + pl )); fi
+            s=$(( s + n ))
+        done < <(hosts_summary)
+        echo "$s"
     else
         nproc 2>/dev/null || echo 4
     fi
@@ -140,14 +202,23 @@ run_seq() {
 }
 
 # Ejecuta un programa MPI desde build/. Con HOSTFILE usa los nodos del fichero.
+# Open MPI: --oversubscribe y --hostfile.  MPICH: -f <hosts> (permite mas procesos que huecos sin avisar).
 run_mpi() {
     local np=$1; shift
-    local args=(--oversubscribe)
-    if [[ -n "$HOSTFILE" ]]; then
-        args+=(-mca plm_rsh_no_tree_spawn 1 --hostfile "$HOSTFILE")
+    local args=()
+    if [[ "$MPI_IMPL" == ompi ]]; then
+        args+=(--oversubscribe)
+        [[ -n "$HOSTFILE" ]] && args+=(-mca plm_rsh_no_tree_spawn 1 --hostfile "$HOSTFILE")
+    else
+        [[ -n "$HOSTFILE" ]] && args+=(-f "$HYDRA_HF")
     fi
     # shellcheck disable=SC2086
-    (cd "$BUILD" && with_timeout mpirun "${args[@]}" $MPI_EXTRA -np "$np" "$@")
+    (cd "$BUILD" && with_timeout mpirun ${args[@]+"${args[@]}"} $MPI_EXTRA -np "$np" "$@")
+}
+
+mpi_version_line() {
+    if [[ "$MPI_IMPL" == ompi ]]; then mpirun --version 2>&1 | head -1
+    else echo "MPICH/Hydra $(mpirun --version 2>&1 | awk '/Version:/ {print $2; exit}')"; fi
 }
 
 # launch <version> <np> <N>: lanza una version con el tamano N (test y entrenamiento final derivados).
@@ -232,7 +303,7 @@ stage_arch() {
         echo "--- red";       ip -br addr 2>/dev/null || echo "(ip no disponible)"
         echo "--- herramientas"
         g++ --version 2>/dev/null | head -1
-        mpirun --version 2>&1 | head -1
+        mpi_version_line
     } > "$f" 2>&1
     if [[ -n "$HOSTFILE" ]]; then
         local h
@@ -263,9 +334,10 @@ stage_build() {
     log "Herramientas y dataset"
     local t
     for t in g++ mpic++ mpirun; do
-        command -v "$t" >/dev/null 2>&1 || die "Falta '$t' (instala build-essential y openmpi-bin libopenmpi-dev)"
+        command -v "$t" >/dev/null 2>&1 || die "Falta '$t' (hace falta g++ y una implementacion de MPI: MPICH u Open MPI)"
         info "$t: $(command -v "$t")"
     done
+    info "MPI: $(mpi_version_line)  [MPI_IMPL=$MPI_IMPL]"
     check_project_files
     mkdir -p "$BUILD" "$OUT_DIR"
     rm -rf "$MY"                                   # fuentes siempre frescos (y sin restos de versiones antiguas)
@@ -336,7 +408,7 @@ stage_verify() {
     local N=$VERIFY_N T F
     T=$(test_of "$N"); F=$(final_of "$N")
     log "Verificacion: N=$N (test=$T, entrenamiento final=$F), procesos: $VERIFY_NPS"
-    local ref got ok=1 np ver res
+    local ref got raw ok=1 np ver res first_err="" first_tag=""
     ref=$(launch knn_seq 1 "$N" | extract_res)
     [[ -n "$ref" ]] || die "El secuencial no produjo resultados"
     {
@@ -348,10 +420,15 @@ stage_verify() {
     for np in $VERIFY_NPS; do
         for ver in knn_mpi knn_mpi_spec knn_mpi_dyn; do
             [[ $ver != knn_mpi && $np -lt 2 ]] && continue   # los pasos 2 y 3 necesitan >= 2 procesos
-            got=$(launch "$ver" "$np" "$N" 2>&1 | extract_res)
+            raw=$(launch "$ver" "$np" "$N" 2>&1 | tr '\r' '\n' | grep -vE '^[0-9]+/[0-9]+$')
+            got=$(printf '%s\n' "$raw" | extract_res)
             if [[ "$got" == "$ref" ]]; then res="OK"; else
                 res="FALLO"; ok=0
-                { echo "--- $ver np=$np: DIFERENCIAS respecto al secuencial"; diff <(echo "$ref") <(echo "$got"); } >> "$OUT_DIR/verificacion.txt"
+                {
+                    echo "--- $ver np=$np: DIFERENCIAS respecto al secuencial"; diff <(echo "$ref") <(echo "$got")
+                    echo "--- ultimas lineas de la salida:"; printf '%s\n' "$raw" | tail -6
+                } >> "$OUT_DIR/verificacion.txt"
+                if [[ -z "$first_err" ]]; then first_tag="$ver np=$np"; first_err=$(printf '%s\n' "$raw" | grep -v '^$' | head -6); fi
             fi
             printf '%-14s np=%-3s %s\n' "$ver" "$np" "$res" | tee -a "$OUT_DIR/verificacion.txt" | sed 's/^/   /'
         done
@@ -360,7 +437,12 @@ stage_verify() {
         echo "RESULTADO: todas las versiones coinciden con el secuencial" | tee -a "$OUT_DIR/verificacion.txt" | sed 's/^/   /'
     else
         echo "RESULTADO: HAY DIFERENCIAS (ver verificacion.txt)" | tee -a "$OUT_DIR/verificacion.txt" | sed 's/^/   /'
-        warn "No sigas con las mediciones hasta resolverlo."
+        warn "Salida del primer fallo ($first_tag):"
+        printf '%s\n' "$first_err" | sed 's/^/      /' >&2
+        if [[ "$FORCE" != 1 ]]; then
+            die "La verificacion ha fallado: se detiene aqui (FORCE=1 ./run_all.sh para seguir de todos modos)."
+        fi
+        warn "FORCE=1: se continua a pesar de la verificacion."
     fi
 }
 
@@ -402,7 +484,7 @@ gmon_collect() {  # gmon_collect <carpeta>: trae a <carpeta> los gmon_rank* de e
 stage_gprof() {
     local t
     for t in g++ mpic++ mpirun gprof; do
-        command -v "$t" >/dev/null 2>&1 || die "Falta '$t' (instala build-essential, openmpi-bin, libopenmpi-dev y binutils)"
+        command -v "$t" >/dev/null 2>&1 || die "Falta '$t' (hace falta g++, gprof/binutils y una implementacion de MPI)"
     done
     check_project_files
     mkdir -p "$BUILD" "$OUT_DIR"
@@ -497,7 +579,7 @@ run_one() {  # run_one <version> <np> <N> <rep>
     launch "$ver" "$np" "$N" > "$logf" 2>&1
     line=$(grep '^CSV,' "$logf" | tail -1)
     if [[ -z "$line" ]]; then
-        warn "Fallo: $ver N=$N np=$np rep=$rep (ver $logf)"
+        warn "Fallo: $ver N=$N np=$np rep=$rep (ver $logf): $(tr '\r' '\n' < "$logf" | grep -vE '^[0-9]+/[0-9]+$' | grep -v '^$' | tail -1 | cut -c1-120)"
         return
     fi
     line=${line#CSV,}

@@ -12,12 +12,12 @@ K: 10 Accuracy: 92.675%
 Best k: 5
 Test accuracy: 0.9365
 Tiempos (s, maximo entre procesos):
-  carga del dataset (replicada)   : 0.222
-  ajuste de K - calculo           : 16.364
+  carga del dataset (replicada)   : 0.226
+  ajuste de K - calculo           : 14.401
   ajuste de K - espera + Allreduce: 0.000
-  evaluacion final - calculo      : 3.324
+  evaluacion final - calculo      : 2.828
   evaluacion final - Reduce       : 0.000
-Total elapsed time 19.909 seconds
+Total elapsed time 17.456 seconds
 Reparto del ajuste por proceso (tareas / segundos de calculo):
-  proceso 0: 50 tareas, 16.364 s
-CSV,knn_mpi,1,4000,2000,12000,10,5,5,0.936500,19.909033,0.221545,16.363564,3.323545,0.000008,,,,
+  proceso 0: 50 tareas, 14.401 s
+CSV,knn_mpi,1,4000,2000,12000,10,5,5,0.936500,17.455673,0.226120,14.400832,2.828130,0.000017,,,,

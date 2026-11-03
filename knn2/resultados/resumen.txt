@@ -2,58 +2,76 @@ RESUMEN  (tiempos en segundos; media de las repeticiones)
 speed-up = T_secuencial / T_paralelo (mismo N);  eficiencia = speed-up / procesos;  KF = Karp-Flatt (fraccion serie efectiva)
 
 === N = 2000  (test = 1000, entrenamiento final = 6000)
-   secuencial: total 5.069  (carga 0.235, ajuste 4.032 = 80 %, evaluacion final 0.803 = 16 %)
-   Amdahl: fraccion secuencial medida (carga replicada) f = 0.0463  ->  speed-up maximo teorico <= 21.6
+   secuencial: total 4.417  (carga 0.212, ajuste 3.524 = 80 %, evaluacion final 0.681 = 15 %)
+   Amdahl: fraccion secuencial medida (carga replicada) f = 0.0480  ->  speed-up maximo teorico <= 20.8
    version                    p     total  speed-up  efic.      KF   notas
-   paso 1: datos              1     4.994      1.02   1.02       -   comunicacion+espera=0.000s (0.0 % del total)
-   paso 1: datos              2     2.746      1.85   0.92   0.083   comunicacion+espera=0.056s (2.0 % del total)
-   paso 1: datos              3     2.036      2.49   0.83   0.103   comunicacion+espera=0.069s (3.4 % del total)
-   paso 1: datos              4     1.668      3.04   0.76   0.105   comunicacion+espera=0.123s (7.3 % del total)
-   paso 1: datos              6     1.506      3.37   0.56   0.157   comunicacion+espera=0.238s (15.8 % del total)
-   paso 2: especulativa       2     4.386      1.16   0.58   0.730   ajuste=1 eval=1 reinicios=1.0 descartado=0.89s
-   paso 2: especulativa       3     2.436      2.08   0.69   0.221   ajuste=2 eval=1 reinicios=1.0 descartado=0.86s
-   paso 2: especulativa       4     1.836      2.76   0.69   0.150   ajuste=3 eval=1 reinicios=1.0 descartado=0.68s
-   paso 2: especulativa       6     1.913      2.65   0.44   0.253   ajuste=5 eval=1 reinicios=1.0 descartado=0.63s
-   paso 3: dinamica+ayuda     2     3.450      1.47   0.73   0.361   ajuste=1 eval=1 reinicios=1.0 descartado=0.85s
-   paso 3: dinamica+ayuda     3     2.582      1.96   0.65   0.264   ajuste=2 eval=1 reinicios=1.0 descartado=0.89s
-   paso 3: dinamica+ayuda     4     2.090      2.43   0.61   0.216   ajuste=3 eval=1 reinicios=1.0 descartado=0.85s
-   paso 3: dinamica+ayuda     6     1.766      2.87   0.48   0.218   ajuste=5 eval=1 reinicios=1.0 descartado=0.52s
+   paso 1: datos              1     4.434      1.00   1.00       -   comunicacion+espera=0.000s (0.0 % del total)
+   paso 1: datos              2     2.487      1.78   0.89   0.126   comunicacion+espera=0.007s (0.3 % del total)
+   paso 1: datos              3     1.798      2.46   0.82   0.111   comunicacion+espera=0.069s (3.9 % del total)
+   paso 1: datos              4     1.487      2.97   0.74   0.115   comunicacion+espera=0.095s (6.4 % del total)
+   paso 1: datos              6     1.203      3.67   0.61   0.127   comunicacion+espera=0.116s (9.7 % del total)
+   paso 1: datos              8     1.349      3.27   0.41   0.206   comunicacion+espera=0.358s (26.5 % del total)
+   paso 1: datos             12     1.435      3.08   0.26   0.264   comunicacion+espera=0.314s (21.9 % del total)
+   paso 2: especulativa       2     3.931      1.12   0.56   0.780   ajuste=1 eval=1 reinicios=1.0 descartado=0.74s
+   paso 2: especulativa       3     2.129      2.07   0.69   0.223   ajuste=2 eval=1 reinicios=1.0 descartado=0.74s
+   paso 2: especulativa       4     1.611      2.74   0.69   0.153   ajuste=3 eval=1 reinicios=1.0 descartado=0.60s
+   paso 2: especulativa       6     1.578      2.80   0.47   0.229   ajuste=5 eval=1 reinicios=1.0 descartado=0.48s
+   paso 2: especulativa       8     1.839      2.40   0.30   0.333   ajuste=7 eval=1 reinicios=1.0 descartado=0.69s
+   paso 2: especulativa      12     1.406      3.14   0.26   0.256   ajuste=10 eval=2 reinicios=1.0 descartado=1.17s
+   paso 3: dinamica+ayuda     2     3.179      1.39   0.69   0.439   ajuste=1 eval=1 reinicios=1.0 descartado=0.75s
+   paso 3: dinamica+ayuda     3     2.376      1.86   0.62   0.307   ajuste=2 eval=1 reinicios=1.0 descartado=0.75s
+   paso 3: dinamica+ayuda     4     2.011      2.20   0.55   0.274   ajuste=3 eval=1 reinicios=1.0 descartado=0.75s
+   paso 3: dinamica+ayuda     6     1.696      2.60   0.43   0.261   ajuste=5 eval=1 reinicios=1.0 descartado=0.59s
+   paso 3: dinamica+ayuda     8     1.769      2.50   0.31   0.315   ajuste=7 eval=1 reinicios=1.0 descartado=0.58s
+   paso 3: dinamica+ayuda    12     1.508      2.93   0.24   0.282   ajuste=10 eval=2 reinicios=1.0 descartado=1.02s
 
 === N = 4000  (test = 2000, entrenamiento final = 12000)
-   secuencial: total 20.100  (carga 0.238, ajuste 16.524 = 82 %, evaluacion final 3.338 = 17 %)
-   Amdahl: fraccion secuencial medida (carga replicada) f = 0.0118  ->  speed-up maximo teorico <= 84.4
+   secuencial: total 17.467  (carga 0.201, ajuste 14.423 = 83 %, evaluacion final 2.843 = 16 %)
+   Amdahl: fraccion secuencial medida (carga replicada) f = 0.0115  ->  speed-up maximo teorico <= 86.8
    version                    p     total  speed-up  efic.      KF   notas
-   paso 1: datos              1    19.909      1.01   1.01       -   comunicacion+espera=0.000s (0.0 % del total)
-   paso 1: datos              2    10.826      1.86   0.93   0.077   comunicacion+espera=0.199s (1.8 % del total)
-   paso 1: datos              3     7.575      2.65   0.88   0.065   comunicacion+espera=0.198s (2.6 % del total)
-   paso 1: datos              4     6.212      3.24   0.81   0.079   comunicacion+espera=0.387s (6.2 % del total)
-   paso 1: datos              6     5.057      3.97   0.66   0.102   comunicacion+espera=0.569s (11.3 % del total)
-   paso 2: especulativa       2    16.922      1.19   0.59   0.684   ajuste=1 eval=1 reinicios=1.0 descartado=3.68s
-   paso 2: especulativa       3     9.384      2.14   0.71   0.200   ajuste=2 eval=1 reinicios=1.0 descartado=3.80s
-   paso 2: especulativa       4     7.346      2.74   0.68   0.154   ajuste=3 eval=1 reinicios=1.0 descartado=3.47s
-   paso 2: especulativa       6     6.436      3.12   0.52   0.184   ajuste=5 eval=1 reinicios=1.0 descartado=2.47s
-   paso 3: dinamica+ayuda     2    12.867      1.56   0.78   0.280   ajuste=1 eval=1 reinicios=1.0 descartado=3.66s
-   paso 3: dinamica+ayuda     3     9.007      2.23   0.74   0.172   ajuste=2 eval=1 reinicios=1.0 descartado=3.74s
-   paso 3: dinamica+ayuda     4     7.709      2.61   0.65   0.178   ajuste=3 eval=1 reinicios=1.0 descartado=3.74s
-   paso 3: dinamica+ayuda     6     6.663      3.02   0.50   0.198   ajuste=5 eval=1 reinicios=1.0 descartado=2.67s
+   paso 1: datos              1    17.456      1.00   1.00       -   comunicacion+espera=0.000s (0.0 % del total)
+   paso 1: datos              2     9.468      1.84   0.92   0.084   comunicacion+espera=0.111s (1.2 % del total)
+   paso 1: datos              3     6.438      2.71   0.90   0.053   comunicacion+espera=0.261s (4.1 % del total)
+   paso 1: datos              4     5.253      3.33   0.83   0.068   comunicacion+espera=0.312s (5.9 % del total)
+   paso 1: datos              6     4.334      4.03   0.67   0.098   comunicacion+espera=0.366s (8.4 % del total)
+   paso 1: datos              8     4.593      3.80   0.48   0.158   comunicacion+espera=1.331s (29.0 % del total)
+   paso 1: datos             12     5.289      3.30   0.28   0.239   comunicacion+espera=0.532s (10.1 % del total)
+   paso 2: especulativa       2    14.919      1.17   0.59   0.708   ajuste=1 eval=1 reinicios=1.0 descartado=2.95s
+   paso 2: especulativa       3     7.821      2.23   0.74   0.172   ajuste=2 eval=1 reinicios=1.0 descartado=3.01s
+   paso 2: especulativa       4     6.119      2.85   0.71   0.134   ajuste=3 eval=1 reinicios=1.0 descartado=2.86s
+   paso 2: especulativa       6     5.313      3.29   0.55   0.165   ajuste=5 eval=1 reinicios=1.0 descartado=1.89s
+   paso 2: especulativa       8     5.747      3.04   0.38   0.233   ajuste=7 eval=1 reinicios=1.0 descartado=2.16s
+   paso 2: especulativa      12     5.945      2.94   0.24   0.280   ajuste=10 eval=2 reinicios=1.0 descartado=7.69s
+   paso 3: dinamica+ayuda     2    10.998      1.59   0.79   0.259   ajuste=1 eval=1 reinicios=1.0 descartado=2.85s
+   paso 3: dinamica+ayuda     3     8.078      2.16   0.72   0.194   ajuste=2 eval=1 reinicios=1.0 descartado=3.03s
+   paso 3: dinamica+ayuda     4     6.737      2.59   0.65   0.181   ajuste=3 eval=1 reinicios=1.0 descartado=3.15s
+   paso 3: dinamica+ayuda     6     5.719      3.05   0.51   0.193   ajuste=5 eval=1 reinicios=1.0 descartado=2.25s
+   paso 3: dinamica+ayuda     8     5.832      3.00   0.37   0.239   ajuste=7 eval=1 reinicios=1.0 descartado=2.08s
+   paso 3: dinamica+ayuda    12     5.608      3.11   0.26   0.259   ajuste=10 eval=2 reinicios=1.0 descartado=5.29s
 
 === N = 8000  (test = 4000, entrenamiento final = 24000)
-   secuencial: total 77.435  (carga 0.222, ajuste 63.928 = 83 %, evaluacion final 13.284 = 17 %)
-   Amdahl: fraccion secuencial medida (carga replicada) f = 0.0029  ->  speed-up maximo teorico <= 348.4
+   secuencial: total 70.772  (carga 0.223, ajuste 58.801 = 83 %, evaluacion final 11.747 = 17 %)
+   Amdahl: fraccion secuencial medida (carga replicada) f = 0.0032  ->  speed-up maximo teorico <= 316.8
    version                    p     total  speed-up  efic.      KF   notas
-   paso 1: datos              1    76.765      1.01   1.01       -   comunicacion+espera=0.000s (0.0 % del total)
-   paso 1: datos              2    42.735      1.81   0.91   0.104   comunicacion+espera=0.716s (1.7 % del total)
-   paso 1: datos              3    30.702      2.52   0.84   0.095   comunicacion+espera=2.091s (6.8 % del total)
-   paso 1: datos              4    25.133      3.08   0.77   0.099   comunicacion+espera=1.417s (5.6 % del total)
-   paso 1: datos              6    20.622      3.75   0.63   0.120   comunicacion+espera=2.163s (10.5 % del total)
-   paso 2: especulativa       2    66.779      1.16   0.58   0.725   ajuste=1 eval=1 reinicios=1.0 descartado=14.52s
-   paso 2: especulativa       3    36.664      2.11   0.70   0.210   ajuste=2 eval=1 reinicios=1.0 descartado=12.00s
-   paso 2: especulativa       4    26.683      2.90   0.73   0.126   ajuste=3 eval=1 reinicios=1.0 descartado=8.27s
-   paso 2: especulativa       6    24.723      3.13   0.52   0.183   ajuste=5 eval=1 reinicios=1.0 descartado=6.76s
-   paso 3: dinamica+ayuda     2    50.079      1.55   0.77   0.293   ajuste=1 eval=1 reinicios=1.0 descartado=14.33s
-   paso 3: dinamica+ayuda     3    35.014      2.21   0.74   0.178   ajuste=2 eval=1 reinicios=1.0 descartado=12.08s
-   paso 3: dinamica+ayuda     4    27.042      2.86   0.72   0.132   ajuste=3 eval=1 reinicios=1.0 descartado=8.30s
-   paso 3: dinamica+ayuda     6    25.210      3.07   0.51   0.191   ajuste=5 eval=1 reinicios=1.0 descartado=6.62s
+   paso 1: datos              1    70.435      1.00   1.00       -   comunicacion+espera=0.000s (0.0 % del total)
+   paso 1: datos              2    37.551      1.88   0.94   0.061   comunicacion+espera=0.016s (0.0 % del total)
+   paso 1: datos              3    27.088      2.61   0.87   0.074   comunicacion+espera=1.331s (4.9 % del total)
+   paso 1: datos              4    22.685      3.12   0.78   0.094   comunicacion+espera=1.351s (6.0 % del total)
+   paso 1: datos              6    23.167      3.05   0.51   0.193   comunicacion+espera=1.526s (6.6 % del total)
+   paso 1: datos              8    24.991      2.83   0.35   0.261   comunicacion+espera=4.918s (19.7 % del total)
+   paso 1: datos             12    28.373      2.49   0.21   0.346   comunicacion+espera=2.741s (9.7 % del total)
+   paso 2: especulativa       2    60.110      1.18   0.59   0.699   ajuste=1 eval=1 reinicios=1.0 descartado=12.21s
+   paso 2: especulativa       3    32.056      2.21   0.74   0.179   ajuste=2 eval=1 reinicios=1.0 descartado=10.37s
+   paso 2: especulativa       4    24.185      2.93   0.73   0.122   ajuste=3 eval=1 reinicios=1.0 descartado=7.31s
+   paso 2: especulativa       6    25.859      2.74   0.46   0.238   ajuste=5 eval=1 reinicios=1.0 descartado=7.04s
+   paso 2: especulativa       8    29.161      2.43   0.30   0.328   ajuste=7 eval=1 reinicios=1.0 descartado=8.89s
+   paso 2: especulativa      12    29.475      2.40   0.20   0.363   ajuste=10 eval=2 reinicios=3.0 descartado=26.90s
+   paso 3: dinamica+ayuda     2    45.145      1.57   0.78   0.276   ajuste=1 eval=1 reinicios=1.0 descartado=12.69s
+   paso 3: dinamica+ayuda     3    31.799      2.23   0.74   0.174   ajuste=2 eval=1 reinicios=1.0 descartado=11.20s
+   paso 3: dinamica+ayuda     4    26.108      2.71   0.68   0.159   ajuste=3 eval=1 reinicios=1.0 descartado=8.46s
+   paso 3: dinamica+ayuda     6    25.626      2.76   0.46   0.235   ajuste=5 eval=1 reinicios=1.0 descartado=7.12s
+   paso 3: dinamica+ayuda     8    26.501      2.67   0.33   0.285   ajuste=7 eval=1 reinicios=1.0 descartado=7.80s
+   paso 3: dinamica+ayuda    12    28.287      2.50   0.21   0.345   ajuste=10 eval=2 reinicios=1.0 descartado=21.35s
 
 COMPROBACION DE CONSISTENCIA (mejor K y accuracy de test, por tamano; deben ser iguales en TODAS las versiones)
    N=2000: OK  ('4', '0.938000')

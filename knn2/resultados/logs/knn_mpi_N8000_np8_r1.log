@@ -1,0 +1,30 @@
+Procesos MPI: 8 | K en [1, 10], 5 folds, 8000 muestras de ajuste, 4000 de test, 24000 de entrenamiento final
+K: 1 Accuracy: 94.85%
+K: 2 Accuracy: 94.125%
+K: 3 Accuracy: 94.8625%
+K: 4 Accuracy: 94.725%
+K: 5 Accuracy: 94.625%
+K: 6 Accuracy: 94.55%
+K: 7 Accuracy: 94.5125%
+K: 8 Accuracy: 94.5125%
+K: 9 Accuracy: 94.2875%
+K: 10 Accuracy: 94.225%
+Best k: 3
+Test accuracy: 0.95375
+Tiempos (s, maximo entre procesos):
+  carga del dataset (replicada)   : 0.379
+  ajuste de K - calculo           : 19.418
+  ajuste de K - espera + Allreduce: 3.946
+  evaluacion final - calculo      : 5.187
+  evaluacion final - Reduce       : 0.972
+Total elapsed time 24.991 seconds
+Reparto del ajuste por proceso (tareas / segundos de calculo):
+  proceso 0: 7 tareas, 17.504 s
+  proceso 1: 7 tareas, 17.446 s
+  proceso 2: 6 tareas, 19.205 s
+  proceso 3: 6 tareas, 15.643 s
+  proceso 4: 6 tareas, 15.602 s
+  proceso 5: 6 tareas, 19.367 s
+  proceso 6: 6 tareas, 19.418 s
+  proceso 7: 6 tareas, 19.202 s
+CSV,knn_mpi,8,8000,4000,24000,10,5,3,0.953750,24.990676,0.379162,19.418100,5.186583,4.917591,,,,

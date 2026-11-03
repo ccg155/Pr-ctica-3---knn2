@@ -1,7 +1,13 @@
-# Un proceso por linea (np=6): nodo, directorio de trabajo, archivos de train/test y si existe el binario
-Ubu cwd=/home/alu/Escritorio/Práctica 3 - knn2/knn2/build train=2 test=2 knn_mpi=si
-Ubu cwd=/home/alu/Escritorio/Práctica 3 - knn2/knn2/build train=2 test=2 knn_mpi=si
-Ubu cwd=/home/alu/Escritorio/Práctica 3 - knn2/knn2/build train=2 test=2 knn_mpi=si
-Ubu cwd=/home/alu/Escritorio/Práctica 3 - knn2/knn2/build train=2 test=2 knn_mpi=si
-Ubu cwd=/home/alu/Escritorio/Práctica 3 - knn2/knn2/build train=2 test=2 knn_mpi=si
-Ubu cwd=/home/alu/Escritorio/Práctica 3 - knn2/knn2/build train=2 test=2 knn_mpi=si
+# Un proceso por linea (np=12): nodo, directorio de trabajo, archivos de train/test y si existe el binario
+L025I-18 cwd=/home/alumno/Documentos/GitHub/Pr-ctica-3---knn2/knn2/build train=2 test=2 knn_mpi=si
+L025I-18 cwd=/home/alumno/Documentos/GitHub/Pr-ctica-3---knn2/knn2/build train=2 test=2 knn_mpi=si
+L025I-18 cwd=/home/alumno/Documentos/GitHub/Pr-ctica-3---knn2/knn2/build train=2 test=2 knn_mpi=si
+L025I-18 cwd=/home/alumno/Documentos/GitHub/Pr-ctica-3---knn2/knn2/build train=2 test=2 knn_mpi=si
+L025I-18 cwd=/home/alumno/Documentos/GitHub/Pr-ctica-3---knn2/knn2/build train=2 test=2 knn_mpi=si
+L025I-18 cwd=/home/alumno/Documentos/GitHub/Pr-ctica-3---knn2/knn2/build train=2 test=2 knn_mpi=si
+L025I-18 cwd=/home/alumno/Documentos/GitHub/Pr-ctica-3---knn2/knn2/build train=2 test=2 knn_mpi=si
+L025I-18 cwd=/home/alumno/Documentos/GitHub/Pr-ctica-3---knn2/knn2/build train=2 test=2 knn_mpi=si
+L025I-18 cwd=/home/alumno/Documentos/GitHub/Pr-ctica-3---knn2/knn2/build train=2 test=2 knn_mpi=si
+L025I-18 cwd=/home/alumno/Documentos/GitHub/Pr-ctica-3---knn2/knn2/build train=2 test=2 knn_mpi=si
+L025I-18 cwd=/home/alumno/Documentos/GitHub/Pr-ctica-3---knn2/knn2/build train=2 test=2 knn_mpi=si
+L025I-18 cwd=/home/alumno/Documentos/GitHub/Pr-ctica-3---knn2/knn2/build train=2 test=2 knn_mpi=si

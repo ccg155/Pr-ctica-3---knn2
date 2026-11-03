@@ -13,14 +13,14 @@ Best k: 3
 Test accuracy: 0.95375
 Evolucion del mejor K conocido (segundos desde el inicio):
   t=0.000  K inicial supuesto = 1
-  t=4.922  nuevo mejor K = 1
-  t=12.343  nuevo mejor K = 3
-  t=35.013  ajuste completo, K definitivo = 3
-Reinicios de la evaluacion (lider): 1, trabajo descartado (suma de evaluadores): 12.082 s
+  t=4.566  nuevo mejor K = 1
+  t=11.449  nuevo mejor K = 3
+  t=31.797  ajuste completo, K definitivo = 3
+Reinicios de la evaluacion (lider): 1, trabajo descartado (suma de evaluadores): 11.201 s
 Por proceso (segundos):
-  proceso 0 [ajuste]      termina a t=34.971  tareas=23  calculo=33.980
-  proceso 1 [ajuste]      termina a t=33.786  tareas=22  calculo=32.765
-  proceso 2 [evaluacion]  termina a t=35.014  evaluacion=27.228 (descartado=12.082)  espera=0.000  reinicios=1  ayuda al ajuste: 5 tareas, 7.522 s
-Carga del dataset (replicada, maximo): 0.255
-Total elapsed time 35.014 seconds
-CSV,knn_mpi_dyn,3,8000,4000,24000,10,5,3,0.953750,35.014188,0.254982,,,,2,1,1,12.082153
+  proceso 0 [ajuste]      termina a t=30.866  tareas=22  calculo=28.354
+  proceso 1 [ajuste]      termina a t=30.752  tareas=22  calculo=28.031
+  proceso 2 [evaluacion]  termina a t=31.799  evaluacion=24.014 (descartado=11.201)  espera=0.000  reinicios=1  ayuda al ajuste: 6 tareas, 7.534 s
+Carga del dataset (replicada, maximo): 0.233
+Total elapsed time 31.799 seconds
+CSV,knn_mpi_dyn,3,8000,4000,24000,10,5,3,0.953750,31.798563,0.233385,,,,2,1,1,11.201143

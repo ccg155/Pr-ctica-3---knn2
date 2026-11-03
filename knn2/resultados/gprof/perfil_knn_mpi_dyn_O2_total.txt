@@ -3,229 +3,222 @@ Flat profile:
 Each sample counts as 0.01 seconds.
   %   cumulative   self              self     total           
  time   seconds   seconds    calls  ms/call  ms/call  name    
- 58.90      4.07     4.07 43400000     0.00     0.00  euclidean(TSample const&, TSample const&)
- 19.68      5.43     1.36    91533     0.01     0.01  TSample* std::__copy_move<false, false, std::random_access_iterator_tag>::__copy_m<TSample*, TSample*>(TSample*, TSample*, TSample*)
- 10.71      6.17     0.74   280000     0.00     0.00  TSample::TSample(char const*, int, int, int)
-  9.84      6.85     0.68    21900     0.03     0.28  knn::KNN::classify(TSample const&) const
-  0.43      6.88     0.03   266600     0.00     0.00  void std::vector<KNNResult, std::allocator<KNNResult> >::_M_realloc_insert<KNNResult>(__gnu_cxx::__normal_iterator<KNNResult*, std::vector<KNNResult, std::allocator<KNNResult> > >, KNNResult&&)
-  0.14      6.89     0.01    21900     0.00     0.02  histogram(std::vector<KNNResult, std::allocator<KNNResult> > const&, int)
-  0.14      6.90     0.01       50     0.20   112.53  (anonymous namespace)::evaluateFold(std::vector<TSample, std::allocator<TSample> > const&, unsigned int, unsigned int, int, std::function<void ()> const&)
-  0.14      6.91     0.01        8     1.25     1.25  TSample* std::__do_uninit_copy<__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*)
-  0.00      6.91     0.00   280000     0.00     0.00  std::vector<float, std::allocator<float> >::_M_default_append(unsigned long)
-  0.00      6.91     0.00      628     0.00     0.00  void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<TSample const&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample const&)
-  0.00      6.91     0.00      128     0.00     0.00  void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<char*, unsigned int&, unsigned int&, unsigned char&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, char*&&, unsigned int&, unsigned int&, unsigned char&)
-  0.00      6.91     0.00      116     0.00     0.00  std::_Function_handler<void (), (anonymous namespace)::Evaluator::helpWith(int)::{lambda()#1}>::_M_invoke(std::_Any_data const&)
-  0.00      6.91     0.00      104     0.00     0.00  (anonymous namespace)::Evaluator::poll()
-  0.00      6.91     0.00       80     0.00     0.00  TSample* std::__do_uninit_copy<__gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, TSample*)
-  0.00      6.91     0.00       50     0.00     0.00  (anonymous namespace)::Evaluator::onResult(int, double)
-  0.00      6.91     0.00       48     0.00     0.00  (anonymous namespace)::readBigEndian(std::istream&, unsigned int&)
-  0.00      6.91     0.00       33     0.00     0.00  std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&)
-  0.00      6.91     0.00       28     0.00     0.00  unsigned long __gnu_cxx::__stoa<unsigned long, unsigned long, char, int>(unsigned long (*)(char const*, char**, int), char const*, char const*, unsigned long*, int)
-  0.00      6.91     0.00       24     0.00     0.00  std::vector<TSample, std::allocator<TSample> >::~vector()
-  0.00      6.91     0.00       16     0.00     0.00  void std::vector<ompi_request_t*, std::allocator<ompi_request_t*> >::_M_realloc_insert<>(__gnu_cxx::__normal_iterator<ompi_request_t**, std::vector<ompi_request_t*, std::allocator<ompi_request_t*> > >)
-  0.00      6.91     0.00       11     0.00     0.00  std::_Function_handler<void (), (anonymous namespace)::Evaluator::helpWith(int)::{lambda()#1}>::_M_manager(std::_Any_data&, std::_Any_data const&, std::_Manager_operation)
-  0.00      6.91     0.00        8     0.00    93.75  mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&)
-  0.00      6.91     0.00        8     0.00     0.00  std::vector<char, std::allocator<char> >::~vector()
-  0.00      6.91     0.00        7     0.00     0.00  (anonymous namespace)::sleepyBarrier(ompi_communicator_t*) [clone .constprop.0]
-  0.00      6.91     0.00        6     0.00     0.00  (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
-  0.00      6.91     0.00        6     0.00     0.00  std::vector<double, std::allocator<double> >::~vector()
-  0.00      6.91     0.00        4     0.00     0.00  std::_Deque_base<std::array<double, 2ul>, std::allocator<std::array<double, 2ul> > >::_Deque_base()
-  0.00      6.91     0.00        4     0.00     0.00  std::_Deque_base<std::array<double, 2ul>, std::allocator<std::array<double, 2ul> > >::~_Deque_base()
-  0.00      6.91     0.00        4     0.00     0.00  std::vector<(anonymous namespace)::TimelineEntry, std::allocator<(anonymous namespace)::TimelineEntry> >::~vector()
-  0.00      6.91     0.00        4     0.00     0.00  std::vector<ompi_request_t*, std::allocator<ompi_request_t*> >::~vector()
-  0.00      6.91     0.00        4     0.00     0.00  TSample* std::uninitialized_copy<__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*)
-  0.00      6.91     0.00        3     0.00     0.00  (anonymous namespace)::Evaluator::announce(int, bool)
-  0.00      6.91     0.00        3     0.00     0.00  std::vector<int, std::allocator<int> >::~vector()
-  0.00      6.91     0.00        2     0.00     0.00  std::vector<double, std::allocator<double> >::vector(unsigned long, double const&, std::allocator<double> const&)
-  0.00      6.91     0.00        1     0.00     0.00  std::_Deque_base<std::array<int, 2ul>, std::allocator<std::array<int, 2ul> > >::~_Deque_base()
+ 61.22      3.82     3.82 44000000     0.00     0.00  euclidean(TSample const&, TSample const&)
+ 17.95      4.94     1.12    91933     0.01     0.01  TSample* std::__copy_move<false, false, std::random_access_iterator_tag>::__copy_m<TSample*, TSample*>(TSample*, TSample*, TSample*)
+ 12.18      5.70     0.76   280000     0.00     0.00  TSample::TSample(char const*, int, int, int)
+  8.49      6.23     0.53    22000     0.02     0.25  knn::KNN::classify(TSample const&) const
+  0.16      6.24     0.01   280000     0.00     0.00  std::vector<float, std::allocator<float> >::_M_default_append(unsigned long)
+  0.00      6.24     0.00   268000     0.00     0.00  void std::vector<KNNResult, std::allocator<KNNResult> >::_M_realloc_insert<KNNResult>(__gnu_cxx::__normal_iterator<KNNResult*, std::vector<KNNResult, std::allocator<KNNResult> > >, KNNResult&&)
+  0.00      6.24     0.00    22000     0.00     0.01  histogram(std::vector<KNNResult, std::allocator<KNNResult> > const&, int)
+  0.00      6.24     0.00      628     0.00     0.00  void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<TSample const&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample const&)
+  0.00      6.24     0.00      148     0.00     0.00  std::_Function_handler<void (), (anonymous namespace)::Evaluator::helpWith(int)::{lambda()#1}>::_M_invoke(std::_Any_data const&)
+  0.00      6.24     0.00      147     0.00     0.00  (anonymous namespace)::Evaluator::poll()
+  0.00      6.24     0.00      128     0.00     0.00  void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<char*, unsigned int&, unsigned int&, unsigned char&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, char*&&, unsigned int&, unsigned int&, unsigned char&)
+  0.00      6.24     0.00       80     0.00     0.00  TSample* std::__do_uninit_copy<__gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, TSample*)
+  0.00      6.24     0.00       50     0.00    99.45  (anonymous namespace)::evaluateFold(std::vector<TSample, std::allocator<TSample> > const&, unsigned int, unsigned int, int, std::function<void ()> const&)
+  0.00      6.24     0.00       50     0.00     0.00  (anonymous namespace)::Evaluator::onResult(int, double)
+  0.00      6.24     0.00       48     0.00     0.00  (anonymous namespace)::readBigEndian(std::istream&, unsigned int&)
+  0.00      6.24     0.00       33     0.00     0.00  std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&)
+  0.00      6.24     0.00       28     0.00     0.00  unsigned long __gnu_cxx::__stoa<unsigned long, unsigned long, char, int>(unsigned long (*)(char const*, char**, int), char const*, char const*, unsigned long*, int)
+  0.00      6.24     0.00       24     0.00     0.00  std::vector<TSample, std::allocator<TSample> >::~vector()
+  0.00      6.24     0.00       15     0.00     0.00  void std::vector<int, std::allocator<int> >::_M_realloc_insert<>(__gnu_cxx::__normal_iterator<int*, std::vector<int, std::allocator<int> > >)
+  0.00      6.24     0.00       13     0.00     0.00  std::_Function_handler<void (), (anonymous namespace)::Evaluator::helpWith(int)::{lambda()#1}>::_M_manager(std::_Any_data&, std::_Any_data const&, std::_Manager_operation)
+  0.00      6.24     0.00        8     0.00    96.25  mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&)
+  0.00      6.24     0.00        8     0.00     0.00  std::vector<char, std::allocator<char> >::~vector()
+  0.00      6.24     0.00        8     0.00     0.00  TSample* std::__do_uninit_copy<__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*)
+  0.00      6.24     0.00        7     0.00     0.00  (anonymous namespace)::sleepyBarrier(int) [clone .constprop.0]
+  0.00      6.24     0.00        7     0.00     0.00  std::vector<int, std::allocator<int> >::~vector()
+  0.00      6.24     0.00        6     0.00     0.00  (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
+  0.00      6.24     0.00        6     0.00     0.00  std::vector<double, std::allocator<double> >::~vector()
+  0.00      6.24     0.00        4     0.00     0.00  std::_Deque_base<std::array<double, 2ul>, std::allocator<std::array<double, 2ul> > >::_Deque_base()
+  0.00      6.24     0.00        4     0.00     0.00  std::_Deque_base<std::array<double, 2ul>, std::allocator<std::array<double, 2ul> > >::~_Deque_base()
+  0.00      6.24     0.00        4     0.00     0.00  std::vector<(anonymous namespace)::TimelineEntry, std::allocator<(anonymous namespace)::TimelineEntry> >::~vector()
+  0.00      6.24     0.00        4     0.00     0.00  TSample* std::uninitialized_copy<__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*)
+  0.00      6.24     0.00        3     0.00     0.00  (anonymous namespace)::Evaluator::announce(int, bool)
+  0.00      6.24     0.00        2     0.00     0.00  std::vector<double, std::allocator<double> >::vector(unsigned long, double const&, std::allocator<double> const&)
+  0.00      6.24     0.00        1     0.00     0.00  std::_Deque_base<std::array<int, 2ul>, std::allocator<std::array<int, 2ul> > >::~_Deque_base()
 
 			Call graph
 
 
-granularity: each sample hit covers 4 byte(s) for 0.14% of 6.91 seconds
+granularity: each sample hit covers 4 byte(s) for 0.16% of 6.24 seconds
 
 index % time    self  children    called     name
                                                  <spontaneous>
-[1]    100.0    0.00    6.91                 main [1]
-                0.01    5.62      50/50          (anonymous namespace)::evaluateFold(std::vector<TSample, std::allocator<TSample> > const&, unsigned int, unsigned int, int, std::function<void ()> const&) [3]
-                0.00    0.75       8/8           mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&) [6]
-                0.06    0.47    1900/21900       knn::KNN::classify(TSample const&) const [2]
-                0.00    0.00      88/104         (anonymous namespace)::Evaluator::poll() [21]
-                0.00    0.00      33/33          std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [25]
-                0.00    0.00      28/28          unsigned long __gnu_cxx::__stoa<unsigned long, unsigned long, char, int>(unsigned long (*)(char const*, char**, int), char const*, char const*, unsigned long*, int) [26]
-                0.00    0.00      28/628         void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<TSample const&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample const&) [19]
-                0.00    0.00      16/24          std::vector<TSample, std::allocator<TSample> >::~vector() [27]
-                0.00    0.00      16/16          void std::vector<ompi_request_t*, std::allocator<ompi_request_t*> >::_M_realloc_insert<>(__gnu_cxx::__normal_iterator<ompi_request_t**, std::vector<ompi_request_t*, std::allocator<ompi_request_t*> > >) [28]
-                0.00    0.00      11/11          std::_Function_handler<void (), (anonymous namespace)::Evaluator::helpWith(int)::{lambda()#1}>::_M_manager(std::_Any_data&, std::_Any_data const&, std::_Manager_operation) [29]
-                0.00    0.00       7/7           (anonymous namespace)::sleepyBarrier(ompi_communicator_t*) [clone .constprop.0] [31]
+[1]    100.0    0.00    6.24                 main [1]
+                0.00    4.97      50/50          (anonymous namespace)::evaluateFold(std::vector<TSample, std::allocator<TSample> > const&, unsigned int, unsigned int, int, std::function<void ()> const&) [3]
+                0.00    0.77       8/8           mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&) [7]
+                0.05    0.45    2000/22000       knn::KNN::classify(TSample const&) const [2]
+                0.00    0.00      99/147         (anonymous namespace)::Evaluator::poll() [20]
+                0.00    0.00      33/33          std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [24]
+                0.00    0.00      28/28          unsigned long __gnu_cxx::__stoa<unsigned long, unsigned long, char, int>(unsigned long (*)(char const*, char**, int), char const*, char const*, unsigned long*, int) [25]
+                0.00    0.00      28/628         void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<TSample const&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample const&) [18]
+                0.00    0.00      16/24          std::vector<TSample, std::allocator<TSample> >::~vector() [26]
+                0.00    0.00      15/15          void std::vector<int, std::allocator<int> >::_M_realloc_insert<>(__gnu_cxx::__normal_iterator<int*, std::vector<int, std::allocator<int> > >) [27]
+                0.00    0.00      13/13          std::_Function_handler<void (), (anonymous namespace)::Evaluator::helpWith(int)::{lambda()#1}>::_M_manager(std::_Any_data&, std::_Any_data const&, std::_Manager_operation) [28]
+                0.00    0.00       7/7           (anonymous namespace)::sleepyBarrier(int) [clone .constprop.0] [31]
                 0.00    0.00       4/4           TSample* std::uninitialized_copy<__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*) [38]
-                0.00    0.00       4/6           std::vector<double, std::allocator<double> >::~vector() [33]
-                0.00    0.00       4/4           std::vector<(anonymous namespace)::TimelineEntry, std::allocator<(anonymous namespace)::TimelineEntry> >::~vector() [36]
-                0.00    0.00       4/4           std::_Deque_base<std::array<double, 2ul>, std::allocator<std::array<double, 2ul> > >::_Deque_base() [34]
-                0.00    0.00       3/4           std::_Deque_base<std::array<double, 2ul>, std::allocator<std::array<double, 2ul> > >::~_Deque_base() [35]
-                0.00    0.00       3/4           std::vector<ompi_request_t*, std::allocator<ompi_request_t*> >::~vector() [37]
-                0.00    0.00       3/6           (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) [32]
-                0.00    0.00       2/2           std::vector<double, std::allocator<double> >::vector(unsigned long, double const&, std::allocator<double> const&) [41]
-                0.00    0.00       1/50          (anonymous namespace)::Evaluator::onResult(int, double) [23]
-                0.00    0.00       1/3           std::vector<int, std::allocator<int> >::~vector() [40]
+                0.00    0.00       4/6           std::vector<double, std::allocator<double> >::~vector() [34]
+                0.00    0.00       4/4           std::vector<(anonymous namespace)::TimelineEntry, std::allocator<(anonymous namespace)::TimelineEntry> >::~vector() [37]
+                0.00    0.00       4/4           std::_Deque_base<std::array<double, 2ul>, std::allocator<std::array<double, 2ul> > >::_Deque_base() [35]
+                0.00    0.00       4/7           std::vector<int, std::allocator<int> >::~vector() [32]
+                0.00    0.00       3/4           std::_Deque_base<std::array<double, 2ul>, std::allocator<std::array<double, 2ul> > >::~_Deque_base() [36]
+                0.00    0.00       3/50          (anonymous namespace)::Evaluator::onResult(int, double) [22]
+                0.00    0.00       3/6           (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) [33]
+                0.00    0.00       2/2           std::vector<double, std::allocator<double> >::vector(unsigned long, double const&, std::allocator<double> const&) [40]
 -----------------------------------------------
-                0.06    0.47    1900/21900       main [1]
-                0.62    5.00   20000/21900       (anonymous namespace)::evaluateFold(std::vector<TSample, std::allocator<TSample> > const&, unsigned int, unsigned int, int, std::function<void ()> const&) [3]
-[2]     89.0    0.68    5.47   21900         knn::KNN::classify(TSample const&) const [2]
-                4.07    0.00 43400000/43400000     euclidean(TSample const&, TSample const&) [4]
-                1.03    0.00   69633/91533       TSample* std::__copy_move<false, false, std::random_access_iterator_tag>::__copy_m<TSample*, TSample*>(TSample*, TSample*, TSample*) [5]
-                0.01    0.33   21900/21900       histogram(std::vector<KNNResult, std::allocator<KNNResult> > const&, int) [8]
-                0.03    0.00  266600/266600      void std::vector<KNNResult, std::allocator<KNNResult> >::_M_realloc_insert<KNNResult>(__gnu_cxx::__normal_iterator<KNNResult*, std::vector<KNNResult, std::allocator<KNNResult> > >, KNNResult&&) [9]
+                0.05    0.45    2000/22000       main [1]
+                0.48    4.49   20000/22000       (anonymous namespace)::evaluateFold(std::vector<TSample, std::allocator<TSample> > const&, unsigned int, unsigned int, int, std::function<void ()> const&) [3]
+[2]     87.7    0.53    4.94   22000         knn::KNN::classify(TSample const&) const [2]
+                3.82    0.00 44000000/44000000     euclidean(TSample const&, TSample const&) [4]
+                0.85    0.00   69933/91933       TSample* std::__copy_move<false, false, std::random_access_iterator_tag>::__copy_m<TSample*, TSample*>(TSample*, TSample*, TSample*) [5]
+                0.00    0.27   22000/22000       histogram(std::vector<KNNResult, std::allocator<KNNResult> > const&, int) [8]
+                0.00    0.00  268000/268000      void std::vector<KNNResult, std::allocator<KNNResult> >::_M_realloc_insert<KNNResult>(__gnu_cxx::__normal_iterator<KNNResult*, std::vector<KNNResult, std::allocator<KNNResult> > >, KNNResult&&) [17]
 -----------------------------------------------
-                0.01    5.62      50/50          main [1]
-[3]     81.4    0.01    5.62      50         (anonymous namespace)::evaluateFold(std::vector<TSample, std::allocator<TSample> > const&, unsigned int, unsigned int, int, std::function<void ()> const&) [3]
-                0.62    5.00   20000/21900       knn::KNN::classify(TSample const&) const [2]
-                0.00    0.00     600/628         void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<TSample const&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample const&) [19]
-                0.00    0.00     116/116         std::_Function_handler<void (), (anonymous namespace)::Evaluator::helpWith(int)::{lambda()#1}>::_M_invoke(std::_Any_data const&) [20]
-                0.00    0.00      16/104         (anonymous namespace)::Evaluator::poll() [21]
+                0.00    4.97      50/50          main [1]
+[3]     79.7    0.00    4.97      50         (anonymous namespace)::evaluateFold(std::vector<TSample, std::allocator<TSample> > const&, unsigned int, unsigned int, int, std::function<void ()> const&) [3]
+                0.48    4.49   20000/22000       knn::KNN::classify(TSample const&) const [2]
+                0.00    0.00     600/628         void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<TSample const&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample const&) [18]
+                0.00    0.00     148/148         std::_Function_handler<void (), (anonymous namespace)::Evaluator::helpWith(int)::{lambda()#1}>::_M_invoke(std::_Any_data const&) [19]
+                0.00    0.00      48/147         (anonymous namespace)::Evaluator::poll() [20]
 -----------------------------------------------
-                4.07    0.00 43400000/43400000     knn::KNN::classify(TSample const&) const [2]
-[4]     58.9    4.07    0.00 43400000         euclidean(TSample const&, TSample const&) [4]
+                3.82    0.00 44000000/44000000     knn::KNN::classify(TSample const&) const [2]
+[4]     61.2    3.82    0.00 44000000         euclidean(TSample const&, TSample const&) [4]
 -----------------------------------------------
-                             4494968             TSample* std::__copy_move<false, false, std::random_access_iterator_tag>::__copy_m<TSample*, TSample*>(TSample*, TSample*, TSample*) [5]
-                0.33    0.00   21900/91533       histogram(std::vector<KNNResult, std::allocator<KNNResult> > const&, int) [8]
-                1.03    0.00   69633/91533       knn::KNN::classify(TSample const&) const [2]
-[5]     19.7    1.36    0.00   91533+4494968 TSample* std::__copy_move<false, false, std::random_access_iterator_tag>::__copy_m<TSample*, TSample*>(TSample*, TSample*, TSample*) [5]
-                             4494968             TSample* std::__copy_move<false, false, std::random_access_iterator_tag>::__copy_m<TSample*, TSample*>(TSample*, TSample*, TSample*) [5]
+                             4557148             TSample* std::__copy_move<false, false, std::random_access_iterator_tag>::__copy_m<TSample*, TSample*>(TSample*, TSample*, TSample*) [5]
+                0.27    0.00   22000/91933       histogram(std::vector<KNNResult, std::allocator<KNNResult> > const&, int) [8]
+                0.85    0.00   69933/91933       knn::KNN::classify(TSample const&) const [2]
+[5]     17.9    1.12    0.00   91933+4557148 TSample* std::__copy_move<false, false, std::random_access_iterator_tag>::__copy_m<TSample*, TSample*>(TSample*, TSample*, TSample*) [5]
+                             4557148             TSample* std::__copy_move<false, false, std::random_access_iterator_tag>::__copy_m<TSample*, TSample*>(TSample*, TSample*, TSample*) [5]
 -----------------------------------------------
-                0.00    0.75       8/8           main [1]
-[6]     10.9    0.00    0.75       8         mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&) [6]
-                0.74    0.00  279872/280000      TSample::TSample(char const*, int, int, int) [7]
-                0.01    0.00       8/8           TSample* std::__do_uninit_copy<__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*) [10]
-                0.00    0.00     128/128         void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<char*, unsigned int&, unsigned int&, unsigned char&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, char*&&, unsigned int&, unsigned int&, unsigned char&) [11]
-                0.00    0.00      48/48          (anonymous namespace)::readBigEndian(std::istream&, unsigned int&) [24]
-                0.00    0.00       8/8           std::vector<char, std::allocator<char> >::~vector() [30]
-                0.00    0.00       8/24          std::vector<TSample, std::allocator<TSample> >::~vector() [27]
+                0.00    0.00     128/280000      void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<char*, unsigned int&, unsigned int&, unsigned char&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, char*&&, unsigned int&, unsigned int&, unsigned char&) [10]
+                0.76    0.01  279872/280000      mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&) [7]
+[6]     12.3    0.76    0.01  280000         TSample::TSample(char const*, int, int, int) [6]
+                0.01    0.00  280000/280000      std::vector<float, std::allocator<float> >::_M_default_append(unsigned long) [9]
 -----------------------------------------------
-                0.00    0.00     128/280000      void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<char*, unsigned int&, unsigned int&, unsigned char&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, char*&&, unsigned int&, unsigned int&, unsigned char&) [11]
-                0.74    0.00  279872/280000      mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&) [6]
-[7]     10.7    0.74    0.00  280000         TSample::TSample(char const*, int, int, int) [7]
-                0.00    0.00  280000/280000      std::vector<float, std::allocator<float> >::_M_default_append(unsigned long) [18]
+                0.00    0.77       8/8           main [1]
+[7]     12.3    0.00    0.77       8         mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&) [7]
+                0.76    0.01  279872/280000      TSample::TSample(char const*, int, int, int) [6]
+                0.00    0.00     128/128         void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<char*, unsigned int&, unsigned int&, unsigned char&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, char*&&, unsigned int&, unsigned int&, unsigned char&) [10]
+                0.00    0.00      48/48          (anonymous namespace)::readBigEndian(std::istream&, unsigned int&) [23]
+                0.00    0.00       8/8           std::vector<char, std::allocator<char> >::~vector() [29]
+                0.00    0.00       8/24          std::vector<TSample, std::allocator<TSample> >::~vector() [26]
+                0.00    0.00       8/8           TSample* std::__do_uninit_copy<__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*) [30]
 -----------------------------------------------
-                0.01    0.33   21900/21900       knn::KNN::classify(TSample const&) const [2]
-[8]      4.9    0.01    0.33   21900         histogram(std::vector<KNNResult, std::allocator<KNNResult> > const&, int) [8]
-                0.33    0.00   21900/91533       TSample* std::__copy_move<false, false, std::random_access_iterator_tag>::__copy_m<TSample*, TSample*>(TSample*, TSample*, TSample*) [5]
+                0.00    0.27   22000/22000       knn::KNN::classify(TSample const&) const [2]
+[8]      4.3    0.00    0.27   22000         histogram(std::vector<KNNResult, std::allocator<KNNResult> > const&, int) [8]
+                0.27    0.00   22000/91933       TSample* std::__copy_move<false, false, std::random_access_iterator_tag>::__copy_m<TSample*, TSample*>(TSample*, TSample*, TSample*) [5]
 -----------------------------------------------
-                0.03    0.00  266600/266600      knn::KNN::classify(TSample const&) const [2]
-[9]      0.4    0.03    0.00  266600         void std::vector<KNNResult, std::allocator<KNNResult> >::_M_realloc_insert<KNNResult>(__gnu_cxx::__normal_iterator<KNNResult*, std::vector<KNNResult, std::allocator<KNNResult> > >, KNNResult&&) [9]
+                0.01    0.00  280000/280000      TSample::TSample(char const*, int, int, int) [6]
+[9]      0.2    0.01    0.00  280000         std::vector<float, std::allocator<float> >::_M_default_append(unsigned long) [9]
 -----------------------------------------------
-                0.01    0.00       8/8           mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&) [6]
-[10]     0.1    0.01    0.00       8         TSample* std::__do_uninit_copy<__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*) [10]
+                0.00    0.00     128/128         mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&) [7]
+[10]     0.0    0.00    0.00     128         void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<char*, unsigned int&, unsigned int&, unsigned char&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, char*&&, unsigned int&, unsigned int&, unsigned char&) [10]
+                0.00    0.00     128/280000      TSample::TSample(char const*, int, int, int) [6]
 -----------------------------------------------
-                0.00    0.00     128/128         mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&) [6]
-[11]     0.0    0.00    0.00     128         void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<char*, unsigned int&, unsigned int&, unsigned char&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, char*&&, unsigned int&, unsigned int&, unsigned char&) [11]
-                0.00    0.00     128/280000      TSample::TSample(char const*, int, int, int) [7]
------------------------------------------------
-                0.00    0.00  280000/280000      TSample::TSample(char const*, int, int, int) [7]
-[18]     0.0    0.00    0.00  280000         std::vector<float, std::allocator<float> >::_M_default_append(unsigned long) [18]
+                0.00    0.00  268000/268000      knn::KNN::classify(TSample const&) const [2]
+[17]     0.0    0.00    0.00  268000         void std::vector<KNNResult, std::allocator<KNNResult> >::_M_realloc_insert<KNNResult>(__gnu_cxx::__normal_iterator<KNNResult*, std::vector<KNNResult, std::allocator<KNNResult> > >, KNNResult&&) [17]
 -----------------------------------------------
                 0.00    0.00      28/628         main [1]
                 0.00    0.00     600/628         (anonymous namespace)::evaluateFold(std::vector<TSample, std::allocator<TSample> > const&, unsigned int, unsigned int, int, std::function<void ()> const&) [3]
-[19]     0.0    0.00    0.00     628         void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<TSample const&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample const&) [19]
+[18]     0.0    0.00    0.00     628         void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<TSample const&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample const&) [18]
 -----------------------------------------------
-                0.00    0.00     116/116         (anonymous namespace)::evaluateFold(std::vector<TSample, std::allocator<TSample> > const&, unsigned int, unsigned int, int, std::function<void ()> const&) [3]
-[20]     0.0    0.00    0.00     116         std::_Function_handler<void (), (anonymous namespace)::Evaluator::helpWith(int)::{lambda()#1}>::_M_invoke(std::_Any_data const&) [20]
-                0.00    0.00      80/80          TSample* std::__do_uninit_copy<__gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, TSample*) [22]
+                0.00    0.00     148/148         (anonymous namespace)::evaluateFold(std::vector<TSample, std::allocator<TSample> > const&, unsigned int, unsigned int, int, std::function<void ()> const&) [3]
+[19]     0.0    0.00    0.00     148         std::_Function_handler<void (), (anonymous namespace)::Evaluator::helpWith(int)::{lambda()#1}>::_M_invoke(std::_Any_data const&) [19]
+                0.00    0.00      80/80          TSample* std::__do_uninit_copy<__gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, TSample*) [21]
 -----------------------------------------------
-                0.00    0.00      16/104         (anonymous namespace)::evaluateFold(std::vector<TSample, std::allocator<TSample> > const&, unsigned int, unsigned int, int, std::function<void ()> const&) [3]
-                0.00    0.00      88/104         main [1]
-[21]     0.0    0.00    0.00     104         (anonymous namespace)::Evaluator::poll() [21]
-                0.00    0.00      49/50          (anonymous namespace)::Evaluator::onResult(int, double) [23]
+                0.00    0.00      48/147         (anonymous namespace)::evaluateFold(std::vector<TSample, std::allocator<TSample> > const&, unsigned int, unsigned int, int, std::function<void ()> const&) [3]
+                0.00    0.00      99/147         main [1]
+[20]     0.0    0.00    0.00     147         (anonymous namespace)::Evaluator::poll() [20]
+                0.00    0.00      47/50          (anonymous namespace)::Evaluator::onResult(int, double) [22]
                 0.00    0.00       3/3           (anonymous namespace)::Evaluator::announce(int, bool) [39]
 -----------------------------------------------
-                0.00    0.00      80/80          std::_Function_handler<void (), (anonymous namespace)::Evaluator::helpWith(int)::{lambda()#1}>::_M_invoke(std::_Any_data const&) [20]
-[22]     0.0    0.00    0.00      80         TSample* std::__do_uninit_copy<__gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, TSample*) [22]
+                0.00    0.00      80/80          std::_Function_handler<void (), (anonymous namespace)::Evaluator::helpWith(int)::{lambda()#1}>::_M_invoke(std::_Any_data const&) [19]
+[21]     0.0    0.00    0.00      80         TSample* std::__do_uninit_copy<__gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, TSample*) [21]
 -----------------------------------------------
-                0.00    0.00       1/50          main [1]
-                0.00    0.00      49/50          (anonymous namespace)::Evaluator::poll() [21]
-[23]     0.0    0.00    0.00      50         (anonymous namespace)::Evaluator::onResult(int, double) [23]
-                0.00    0.00       3/6           (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) [32]
+                0.00    0.00       3/50          main [1]
+                0.00    0.00      47/50          (anonymous namespace)::Evaluator::poll() [20]
+[22]     0.0    0.00    0.00      50         (anonymous namespace)::Evaluator::onResult(int, double) [22]
+                0.00    0.00       3/6           (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) [33]
 -----------------------------------------------
-                0.00    0.00      48/48          mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&) [6]
-[24]     0.0    0.00    0.00      48         (anonymous namespace)::readBigEndian(std::istream&, unsigned int&) [24]
+                0.00    0.00      48/48          mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&) [7]
+[23]     0.0    0.00    0.00      48         (anonymous namespace)::readBigEndian(std::istream&, unsigned int&) [23]
 -----------------------------------------------
                 0.00    0.00      33/33          main [1]
-[25]     0.0    0.00    0.00      33         std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [25]
+[24]     0.0    0.00    0.00      33         std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [24]
 -----------------------------------------------
                 0.00    0.00      28/28          main [1]
-[26]     0.0    0.00    0.00      28         unsigned long __gnu_cxx::__stoa<unsigned long, unsigned long, char, int>(unsigned long (*)(char const*, char**, int), char const*, char const*, unsigned long*, int) [26]
+[25]     0.0    0.00    0.00      28         unsigned long __gnu_cxx::__stoa<unsigned long, unsigned long, char, int>(unsigned long (*)(char const*, char**, int), char const*, char const*, unsigned long*, int) [25]
 -----------------------------------------------
-                0.00    0.00       8/24          mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&) [6]
+                0.00    0.00       8/24          mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&) [7]
                 0.00    0.00      16/24          main [1]
-[27]     0.0    0.00    0.00      24         std::vector<TSample, std::allocator<TSample> >::~vector() [27]
+[26]     0.0    0.00    0.00      24         std::vector<TSample, std::allocator<TSample> >::~vector() [26]
 -----------------------------------------------
-                0.00    0.00      16/16          main [1]
-[28]     0.0    0.00    0.00      16         void std::vector<ompi_request_t*, std::allocator<ompi_request_t*> >::_M_realloc_insert<>(__gnu_cxx::__normal_iterator<ompi_request_t**, std::vector<ompi_request_t*, std::allocator<ompi_request_t*> > >) [28]
+                0.00    0.00      15/15          main [1]
+[27]     0.0    0.00    0.00      15         void std::vector<int, std::allocator<int> >::_M_realloc_insert<>(__gnu_cxx::__normal_iterator<int*, std::vector<int, std::allocator<int> > >) [27]
 -----------------------------------------------
-                0.00    0.00      11/11          main [1]
-[29]     0.0    0.00    0.00      11         std::_Function_handler<void (), (anonymous namespace)::Evaluator::helpWith(int)::{lambda()#1}>::_M_manager(std::_Any_data&, std::_Any_data const&, std::_Manager_operation) [29]
+                0.00    0.00      13/13          main [1]
+[28]     0.0    0.00    0.00      13         std::_Function_handler<void (), (anonymous namespace)::Evaluator::helpWith(int)::{lambda()#1}>::_M_manager(std::_Any_data&, std::_Any_data const&, std::_Manager_operation) [28]
 -----------------------------------------------
-                0.00    0.00       8/8           mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&) [6]
-[30]     0.0    0.00    0.00       8         std::vector<char, std::allocator<char> >::~vector() [30]
+                0.00    0.00       8/8           mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&) [7]
+[29]     0.0    0.00    0.00       8         std::vector<char, std::allocator<char> >::~vector() [29]
+-----------------------------------------------
+                0.00    0.00       8/8           mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&) [7]
+[30]     0.0    0.00    0.00       8         TSample* std::__do_uninit_copy<__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*) [30]
 -----------------------------------------------
                 0.00    0.00       7/7           main [1]
-[31]     0.0    0.00    0.00       7         (anonymous namespace)::sleepyBarrier(ompi_communicator_t*) [clone .constprop.0] [31]
+[31]     0.0    0.00    0.00       7         (anonymous namespace)::sleepyBarrier(int) [clone .constprop.0] [31]
+-----------------------------------------------
+                0.00    0.00       3/7           (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) [33]
+                0.00    0.00       4/7           main [1]
+[32]     0.0    0.00    0.00       7         std::vector<int, std::allocator<int> >::~vector() [32]
 -----------------------------------------------
                 0.00    0.00       3/6           main [1]
-                0.00    0.00       3/6           (anonymous namespace)::Evaluator::onResult(int, double) [23]
-[32]     0.0    0.00    0.00       6         (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) [32]
-                0.00    0.00       2/6           std::vector<double, std::allocator<double> >::~vector() [33]
-                0.00    0.00       2/3           std::vector<int, std::allocator<int> >::~vector() [40]
-                0.00    0.00       1/4           std::vector<ompi_request_t*, std::allocator<ompi_request_t*> >::~vector() [37]
-                0.00    0.00       1/4           std::_Deque_base<std::array<double, 2ul>, std::allocator<std::array<double, 2ul> > >::~_Deque_base() [35]
-                0.00    0.00       1/1           std::_Deque_base<std::array<int, 2ul>, std::allocator<std::array<int, 2ul> > >::~_Deque_base() [42]
+                0.00    0.00       3/6           (anonymous namespace)::Evaluator::onResult(int, double) [22]
+[33]     0.0    0.00    0.00       6         (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) [33]
+                0.00    0.00       3/7           std::vector<int, std::allocator<int> >::~vector() [32]
+                0.00    0.00       2/6           std::vector<double, std::allocator<double> >::~vector() [34]
+                0.00    0.00       1/4           std::_Deque_base<std::array<double, 2ul>, std::allocator<std::array<double, 2ul> > >::~_Deque_base() [36]
+                0.00    0.00       1/1           std::_Deque_base<std::array<int, 2ul>, std::allocator<std::array<int, 2ul> > >::~_Deque_base() [41]
 -----------------------------------------------
-                0.00    0.00       2/6           (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) [32]
+                0.00    0.00       2/6           (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) [33]
                 0.00    0.00       4/6           main [1]
-[33]     0.0    0.00    0.00       6         std::vector<double, std::allocator<double> >::~vector() [33]
+[34]     0.0    0.00    0.00       6         std::vector<double, std::allocator<double> >::~vector() [34]
 -----------------------------------------------
                 0.00    0.00       4/4           main [1]
-[34]     0.0    0.00    0.00       4         std::_Deque_base<std::array<double, 2ul>, std::allocator<std::array<double, 2ul> > >::_Deque_base() [34]
+[35]     0.0    0.00    0.00       4         std::_Deque_base<std::array<double, 2ul>, std::allocator<std::array<double, 2ul> > >::_Deque_base() [35]
 -----------------------------------------------
-                0.00    0.00       1/4           (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) [32]
+                0.00    0.00       1/4           (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) [33]
                 0.00    0.00       3/4           main [1]
-[35]     0.0    0.00    0.00       4         std::_Deque_base<std::array<double, 2ul>, std::allocator<std::array<double, 2ul> > >::~_Deque_base() [35]
+[36]     0.0    0.00    0.00       4         std::_Deque_base<std::array<double, 2ul>, std::allocator<std::array<double, 2ul> > >::~_Deque_base() [36]
 -----------------------------------------------
                 0.00    0.00       4/4           main [1]
-[36]     0.0    0.00    0.00       4         std::vector<(anonymous namespace)::TimelineEntry, std::allocator<(anonymous namespace)::TimelineEntry> >::~vector() [36]
------------------------------------------------
-                0.00    0.00       1/4           (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) [32]
-                0.00    0.00       3/4           main [1]
-[37]     0.0    0.00    0.00       4         std::vector<ompi_request_t*, std::allocator<ompi_request_t*> >::~vector() [37]
+[37]     0.0    0.00    0.00       4         std::vector<(anonymous namespace)::TimelineEntry, std::allocator<(anonymous namespace)::TimelineEntry> >::~vector() [37]
 -----------------------------------------------
                 0.00    0.00       4/4           main [1]
 [38]     0.0    0.00    0.00       4         TSample* std::uninitialized_copy<__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*) [38]
 -----------------------------------------------
-                0.00    0.00       3/3           (anonymous namespace)::Evaluator::poll() [21]
+                0.00    0.00       3/3           (anonymous namespace)::Evaluator::poll() [20]
 [39]     0.0    0.00    0.00       3         (anonymous namespace)::Evaluator::announce(int, bool) [39]
 -----------------------------------------------
-                0.00    0.00       1/3           main [1]
-                0.00    0.00       2/3           (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) [32]
-[40]     0.0    0.00    0.00       3         std::vector<int, std::allocator<int> >::~vector() [40]
------------------------------------------------
                 0.00    0.00       2/2           main [1]
-[41]     0.0    0.00    0.00       2         std::vector<double, std::allocator<double> >::vector(unsigned long, double const&, std::allocator<double> const&) [41]
+[40]     0.0    0.00    0.00       2         std::vector<double, std::allocator<double> >::vector(unsigned long, double const&, std::allocator<double> const&) [40]
 -----------------------------------------------
-                0.00    0.00       1/1           (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) [32]
-[42]     0.0    0.00    0.00       1         std::_Deque_base<std::array<int, 2ul>, std::allocator<std::array<int, 2ul> > >::~_Deque_base() [42]
+                0.00    0.00       1/1           (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) [33]
+[41]     0.0    0.00    0.00       1         std::_Deque_base<std::array<int, 2ul>, std::allocator<std::array<int, 2ul> > >::~_Deque_base() [41]
 -----------------------------------------------
 
 Index by function name
 
-   [4] euclidean(TSample const&, TSample const&) [2] knn::KNN::classify(TSample const&) const [28] void std::vector<ompi_request_t*, std::allocator<ompi_request_t*> >::_M_realloc_insert<>(__gnu_cxx::__normal_iterator<ompi_request_t**, std::vector<ompi_request_t*, std::allocator<ompi_request_t*> > >)
-   [8] histogram(std::vector<KNNResult, std::allocator<KNNResult> > const&, int) [34] std::_Deque_base<std::array<double, 2ul>, std::allocator<std::array<double, 2ul> > >::_Deque_base() [37] std::vector<ompi_request_t*, std::allocator<ompi_request_t*> >::~vector()
-   [3] (anonymous namespace)::evaluateFold(std::vector<TSample, std::allocator<TSample> > const&, unsigned int, unsigned int, int, std::function<void ()> const&) (knn_mpi_spec.cpp) [35] std::_Deque_base<std::array<double, 2ul>, std::allocator<std::array<double, 2ul> > >::~_Deque_base() [30] std::vector<char, std::allocator<char> >::~vector()
-  [24] (anonymous namespace)::readBigEndian(std::istream&, unsigned int&) (mnist.cc) [42] std::_Deque_base<std::array<int, 2ul>, std::allocator<std::array<int, 2ul> > >::~_Deque_base() [41] std::vector<double, std::allocator<double> >::vector(unsigned long, double const&, std::allocator<double> const&)
-  [31] (anonymous namespace)::sleepyBarrier(ompi_communicator_t*) [clone .constprop.0] (knn_mpi_spec.cpp) [5] TSample* std::__copy_move<false, false, std::random_access_iterator_tag>::__copy_m<TSample*, TSample*>(TSample*, TSample*, TSample*) [33] std::vector<double, std::allocator<double> >::~vector()
-  [32] (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) (knn_mpi_spec.cpp) [29] std::_Function_handler<void (), (anonymous namespace)::Evaluator::helpWith(int)::{lambda()#1}>::_M_manager(std::_Any_data&, std::_Any_data const&, std::_Manager_operation) (std_function.h) [18] std::vector<float, std::allocator<float> >::_M_default_append(unsigned long)
-  [21] (anonymous namespace)::Evaluator::poll() (knn_mpi_spec.cpp) [20] std::_Function_handler<void (), (anonymous namespace)::Evaluator::helpWith(int)::{lambda()#1}>::_M_invoke(std::_Any_data const&) (std_function.h) [40] std::vector<int, std::allocator<int> >::~vector()
-  [39] (anonymous namespace)::Evaluator::announce(int, bool) (knn_mpi_spec.cpp) [11] void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<char*, unsigned int&, unsigned int&, unsigned char&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, char*&&, unsigned int&, unsigned int&, unsigned char&) [25] std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&)
-  [23] (anonymous namespace)::Evaluator::onResult(int, double) (knn_mpi_spec.cpp) [19] void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<TSample const&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample const&) [10] TSample* std::__do_uninit_copy<__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*)
-   [6] mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&) [27] std::vector<TSample, std::allocator<TSample> >::~vector() [22] TSample* std::__do_uninit_copy<__gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, TSample*)
-   [7] TSample::TSample(char const*, int, int, int) [9] void std::vector<KNNResult, std::allocator<KNNResult> >::_M_realloc_insert<KNNResult>(__gnu_cxx::__normal_iterator<KNNResult*, std::vector<KNNResult, std::allocator<KNNResult> > >, KNNResult&&) [38] TSample* std::uninitialized_copy<__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*)
-  [26] unsigned long __gnu_cxx::__stoa<unsigned long, unsigned long, char, int>(unsigned long (*)(char const*, char**, int), char const*, char const*, unsigned long*, int) [36] std::vector<(anonymous namespace)::TimelineEntry, std::allocator<(anonymous namespace)::TimelineEntry> >::~vector() (stl_vector.h)
+   [4] euclidean(TSample const&, TSample const&) [2] knn::KNN::classify(TSample const&) const [29] std::vector<char, std::allocator<char> >::~vector()
+   [8] histogram(std::vector<KNNResult, std::allocator<KNNResult> > const&, int) [35] std::_Deque_base<std::array<double, 2ul>, std::allocator<std::array<double, 2ul> > >::_Deque_base() [40] std::vector<double, std::allocator<double> >::vector(unsigned long, double const&, std::allocator<double> const&)
+   [3] (anonymous namespace)::evaluateFold(std::vector<TSample, std::allocator<TSample> > const&, unsigned int, unsigned int, int, std::function<void ()> const&) (knn_mpi_spec.cpp) [36] std::_Deque_base<std::array<double, 2ul>, std::allocator<std::array<double, 2ul> > >::~_Deque_base() [34] std::vector<double, std::allocator<double> >::~vector()
+  [23] (anonymous namespace)::readBigEndian(std::istream&, unsigned int&) (mnist.cc) [41] std::_Deque_base<std::array<int, 2ul>, std::allocator<std::array<int, 2ul> > >::~_Deque_base() [9] std::vector<float, std::allocator<float> >::_M_default_append(unsigned long)
+  [31] (anonymous namespace)::sleepyBarrier(int) [clone .constprop.0] (knn_mpi_spec.cpp) [5] TSample* std::__copy_move<false, false, std::random_access_iterator_tag>::__copy_m<TSample*, TSample*>(TSample*, TSample*, TSample*) [27] void std::vector<int, std::allocator<int> >::_M_realloc_insert<>(__gnu_cxx::__normal_iterator<int*, std::vector<int, std::allocator<int> > >)
+  [33] (anonymous namespace)::abortAll(int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) (knn_mpi_spec.cpp) [28] std::_Function_handler<void (), (anonymous namespace)::Evaluator::helpWith(int)::{lambda()#1}>::_M_manager(std::_Any_data&, std::_Any_data const&, std::_Manager_operation) (std_function.h) [32] std::vector<int, std::allocator<int> >::~vector()
+  [20] (anonymous namespace)::Evaluator::poll() (knn_mpi_spec.cpp) [19] std::_Function_handler<void (), (anonymous namespace)::Evaluator::helpWith(int)::{lambda()#1}>::_M_invoke(std::_Any_data const&) (std_function.h) [24] std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&)
+  [39] (anonymous namespace)::Evaluator::announce(int, bool) (knn_mpi_spec.cpp) [10] void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<char*, unsigned int&, unsigned int&, unsigned char&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, char*&&, unsigned int&, unsigned int&, unsigned char&) [30] TSample* std::__do_uninit_copy<__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*)
+  [22] (anonymous namespace)::Evaluator::onResult(int, double) (knn_mpi_spec.cpp) [18] void std::vector<TSample, std::allocator<TSample> >::_M_realloc_insert<TSample const&>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample const&) [21] TSample* std::__do_uninit_copy<__gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample const*, std::vector<TSample, std::allocator<TSample> > >, TSample*)
+   [7] mnist::loadMnist(char const*, char const*, std::vector<TSample, std::allocator<TSample> >&) [26] std::vector<TSample, std::allocator<TSample> >::~vector() [38] TSample* std::uninitialized_copy<__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*>(__gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, __gnu_cxx::__normal_iterator<TSample*, std::vector<TSample, std::allocator<TSample> > >, TSample*)
+   [6] TSample::TSample(char const*, int, int, int) [17] void std::vector<KNNResult, std::allocator<KNNResult> >::_M_realloc_insert<KNNResult>(__gnu_cxx::__normal_iterator<KNNResult*, std::vector<KNNResult, std::allocator<KNNResult> > >, KNNResult&&)
+  [25] unsigned long __gnu_cxx::__stoa<unsigned long, unsigned long, char, int>(unsigned long (*)(char const*, char**, int), char const*, char const*, unsigned long*, int) [37] std::vector<(anonymous namespace)::TimelineEntry, std::allocator<(anonymous namespace)::TimelineEntry> >::~vector() (stl_vector.h)
