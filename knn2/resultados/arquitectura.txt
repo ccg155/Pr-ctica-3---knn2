@@ -1,0 +1,71 @@
+Fecha: mar 03 nov 2026 12:40:33 CET
+Equipo: Ubu
+--- uname -a
+Linux Ubu 6.17.0-22-generic #22~24.04.1-Ubuntu SMP PREEMPT_DYNAMIC Thu Mar 26 15:25:54 UTC 2 x86_64 x86_64 x86_64 GNU/Linux
+--- lscpu
+Arquitectura:                            x86_64
+modo(s) de operación de las CPUs:        32-bit, 64-bit
+Address sizes:                           39 bits physical, 48 bits virtual
+Orden de los bytes:                      Little Endian
+CPU(s):                                  6
+Lista de la(s) CPU(s) en línea:          0-5
+ID de fabricante:                        GenuineIntel
+Nombre del modelo:                       12th Gen Intel(R) Core(TM) i5-12400F
+Familia de CPU:                          6
+Modelo:                                  151
+Hilo(s) de procesamiento por núcleo:     1
+Núcleo(s) por «socket»:                  6
+«Socket(s)»                              1
+Revisión:                                2
+BogoMIPS:                                4992,00
+Indicadores:                             fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch pti fsgsbase bmi1 avx2 bmi2 invpcid rdseed adx clflushopt sha_ni arat md_clear flush_l1d arch_capabilities
+Fabricante del hipervisor:               KVM
+Tipo de virtualización:                  lleno
+Caché L1d:                               288 KiB (6 instances)
+Caché L1i:                               192 KiB (6 instances)
+Caché L2:                                7,5 MiB (6 instances)
+Caché L3:                                108 MiB (6 instances)
+Modo(s) NUMA:                            1
+CPU(s) del nodo NUMA 0:                  0-5
+Vulnerability Gather data sampling:      Not affected
+Vulnerability Ghostwrite:                Not affected
+Vulnerability Indirect target selection: Mitigation; Aligned branch/return thunks
+Vulnerability Itlb multihit:             KVM: Mitigation: VMX unsupported
+Vulnerability L1tf:                      Mitigation; PTE Inversion
+Vulnerability Mds:                       Mitigation; Clear CPU buffers; SMT Host state unknown
+Vulnerability Meltdown:                  Mitigation; PTI
+Vulnerability Mmio stale data:           Not affected
+Vulnerability Old microcode:             Not affected
+Vulnerability Reg file data sampling:    Not affected
+Vulnerability Retbleed:                  Not affected
+Vulnerability Spec rstack overflow:      Not affected
+Vulnerability Spec store bypass:         Vulnerable
+Vulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:                Mitigation; Retpolines; STIBP disabled; RSB filling; PBRSB-eIBRS Not affected; BHI Retpoline
+Vulnerability Srbds:                     Not affected
+Vulnerability Tsa:                       Not affected
+Vulnerability Tsx async abort:           Not affected
+Vulnerability Vmscape:                   Not affected
+--- memoria
+               total       usado       libre  compartido   búf/caché  disponible
+Mem:           7,8Gi       2,6Gi       276Mi        81Mi       5,2Gi       5,1Gi
+Inter:            0B          0B          0B
+--- caches (getconf)
+LEVEL1_ICACHE_SIZE                 32768
+LEVEL1_ICACHE_ASSOC                
+LEVEL1_ICACHE_LINESIZE             64
+LEVEL1_DCACHE_SIZE                 49152
+LEVEL1_DCACHE_ASSOC                12
+LEVEL1_DCACHE_LINESIZE             64
+LEVEL2_CACHE_SIZE                  1310720
+LEVEL2_CACHE_ASSOC                 10
+LEVEL2_CACHE_LINESIZE              64
+LEVEL3_CACHE_SIZE                  18874368
+LEVEL3_CACHE_ASSOC                 9
+LEVEL3_CACHE_LINESIZE              64
+LEVEL4_CACHE_SIZE                  
+LEVEL4_CACHE_ASSOC                 
+LEVEL4_CACHE_LINESIZE              
+--- herramientas
+g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+mpirun (Open MPI) 4.1.6

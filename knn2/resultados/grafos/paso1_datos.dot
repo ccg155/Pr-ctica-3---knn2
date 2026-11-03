@@ -1,0 +1,35 @@
+// Solucion paralela PASO 1: paralelismo de datos (SPMD, memoria distribuida, paso de mensajes)
+digraph paso1 {
+  rankdir=TB; nodesep=0.4; ranksep=0.45; compound=true;
+  node [shape=box, fontname="Helvetica", fontsize=10, style=rounded];
+  edge [fontname="Helvetica", fontsize=9];
+
+  init [shape=oval, label="MPI_Init / MPI_Comm_rank / MPI_Comm_size"];
+
+  subgraph cluster_p0 { label="proceso 0"; style=dashed; fontname="Helvetica";
+    l0 [label="carga del dataset\n(replicada)"]; t0 [label="ajuste: tareas t = 0, P, 2P, ...\n(reparto ciclico)"];
+    k0 [label="elige mejor K\n(mismo en todos)"]; e0 [label="evaluacion final:\nbloque 0 del test"];
+    l0 -> t0; t0 -> k0 [style=invis]; k0 -> e0;
+  }
+  subgraph cluster_p1 { label="proceso 1"; style=dashed; fontname="Helvetica";
+    l1 [label="carga del dataset\n(replicada)"]; t1 [label="ajuste: tareas t = 1, P+1, ...\n(reparto ciclico)"];
+    k1 [label="elige mejor K\n(mismo en todos)"]; e1 [label="evaluacion final:\nbloque 1 del test"];
+    l1 -> t1; t1 -> k1 [style=invis]; k1 -> e1;
+  }
+  subgraph cluster_pn { label="proceso P-1"; style=dashed; fontname="Helvetica";
+    ln [label="carga del dataset\n(replicada)"]; tn [label="ajuste: tareas t = P-1, 2P-1, ...\n(reparto ciclico)"];
+    kn [label="elige mejor K\n(mismo en todos)"]; en [label="evaluacion final:\nbloque P-1 del test"];
+    ln -> tn; tn -> kn [style=invis]; kn -> en;
+  }
+
+  init -> l0; init -> l1; init -> ln;
+
+  allr [shape=box, style="filled,rounded", fillcolor="#ffe9c7", label="MPI_Allreduce(SUM) de las 50 accuracies\nSINCRONIZACION: todos esperan al mas lento\n(cada proceso aporta solo sus posiciones; el resto 0.0)"];
+  t0 -> allr; t1 -> allr; tn -> allr;
+  allr -> k0; allr -> k1; allr -> kn;
+
+  red [shape=box, style="filled,rounded", fillcolor="#ffe9c7", label="MPI_Reduce(SUM) de los aciertos -> proceso 0"];
+  e0 -> red; e1 -> red; en -> red;
+  out [shape=oval, label="proceso 0: Best k, Test accuracy\nMPI_Reduce(MAX) de tiempos + MPI_Gather de metricas"];
+  red -> out;
+}

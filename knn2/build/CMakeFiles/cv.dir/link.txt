@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/cv.dir/main.cc.o CMakeFiles/cv.dir/crossValidation.cc.o CMakeFiles/cv.dir/mnist.cc.o CMakeFiles/cv.dir/knn.cc.o CMakeFiles/cv.dir/sample.cc.o -o cv 

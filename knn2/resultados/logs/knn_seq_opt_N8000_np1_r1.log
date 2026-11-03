@@ -1,0 +1,135 @@
+Starting search for best K parameter in range [1, 10] using 5-Folds Cross Validation with 8000 samples.
+Testing k 1
+Starting 5-Folds Cross Validation
+Testing fold 0
+Fold: 0 Accuracy: 93.75% completed in 1.27287 seconds
+Testing fold 1
+Fold: 1 Accuracy: 95.1875% completed in 1.24772 seconds
+Testing fold 2
+Fold: 2 Accuracy: 95.5% completed in 1.24467 seconds
+Testing fold 3
+Fold: 3 Accuracy: 96% completed in 1.26983 seconds
+Testing fold 4
+Fold: 4 Accuracy: 93.8125% completed in 1.2635 seconds
+K: 1 Accuracy: 94.85% completed in 6.30327 seconds
+Testing k 2
+Starting 5-Folds Cross Validation
+Testing fold 0
+Fold: 0 Accuracy: 92.5625% completed in 1.34233 seconds
+Testing fold 1
+Fold: 1 Accuracy: 94.875% completed in 1.29537 seconds
+Testing fold 2
+Fold: 2 Accuracy: 95.0625% completed in 1.2595 seconds
+Testing fold 3
+Fold: 3 Accuracy: 94.875% completed in 1.24636 seconds
+Testing fold 4
+Fold: 4 Accuracy: 93.25% completed in 1.24132 seconds
+K: 2 Accuracy: 94.125% completed in 6.39005 seconds
+Testing k 3
+Starting 5-Folds Cross Validation
+Testing fold 0
+Fold: 0 Accuracy: 94.25% completed in 1.24734 seconds
+Testing fold 1
+Fold: 1 Accuracy: 95.5625% completed in 1.24022 seconds
+Testing fold 2
+Fold: 2 Accuracy: 95.25% completed in 1.25436 seconds
+Testing fold 3
+Fold: 3 Accuracy: 95.3125% completed in 1.26244 seconds
+Testing fold 4
+Fold: 4 Accuracy: 93.9375% completed in 1.31012 seconds
+K: 3 Accuracy: 94.8625% completed in 6.3205 seconds
+Testing k 4
+Starting 5-Folds Cross Validation
+Testing fold 0
+Fold: 0 Accuracy: 93.875% completed in 1.28737 seconds
+Testing fold 1
+Fold: 1 Accuracy: 95.5625% completed in 1.26676 seconds
+Testing fold 2
+Fold: 2 Accuracy: 95% completed in 1.28334 seconds
+Testing fold 3
+Fold: 3 Accuracy: 95.6875% completed in 1.25579 seconds
+Testing fold 4
+Fold: 4 Accuracy: 93.5% completed in 1.25629 seconds
+K: 4 Accuracy: 94.725% completed in 6.35459 seconds
+Testing k 5
+Starting 5-Folds Cross Validation
+Testing fold 0
+Fold: 0 Accuracy: 93.875% completed in 1.2832 seconds
+Testing fold 1
+Fold: 1 Accuracy: 95.75% completed in 1.25496 seconds
+Testing fold 2
+Fold: 2 Accuracy: 95.1875% completed in 1.25667 seconds
+Testing fold 3
+Fold: 3 Accuracy: 95.125% completed in 1.25815 seconds
+Testing fold 4
+Fold: 4 Accuracy: 93.1875% completed in 1.24603 seconds
+K: 5 Accuracy: 94.625% completed in 6.30308 seconds
+Testing k 6
+Starting 5-Folds Cross Validation
+Testing fold 0
+Fold: 0 Accuracy: 93.6875% completed in 1.37998 seconds
+Testing fold 1
+Fold: 1 Accuracy: 95.25% completed in 1.37018 seconds
+Testing fold 2
+Fold: 2 Accuracy: 94.9375% completed in 1.34739 seconds
+Testing fold 3
+Fold: 3 Accuracy: 95.375% completed in 1.40553 seconds
+Testing fold 4
+Fold: 4 Accuracy: 93.5% completed in 1.42214 seconds
+K: 6 Accuracy: 94.55% completed in 6.92969 seconds
+Testing k 7
+Starting 5-Folds Cross Validation
+Testing fold 0
+Fold: 0 Accuracy: 94.125% completed in 1.39558 seconds
+Testing fold 1
+Fold: 1 Accuracy: 95.3125% completed in 1.43935 seconds
+Testing fold 2
+Fold: 2 Accuracy: 95% completed in 1.44892 seconds
+Testing fold 3
+Fold: 3 Accuracy: 95.0625% completed in 1.41333 seconds
+Testing fold 4
+Fold: 4 Accuracy: 93.0625% completed in 1.4493 seconds
+K: 7 Accuracy: 94.5125% completed in 7.15135 seconds
+Testing k 8
+Starting 5-Folds Cross Validation
+Testing fold 0
+Fold: 0 Accuracy: 93.8125% completed in 1.42796 seconds
+Testing fold 1
+Fold: 1 Accuracy: 95.3125% completed in 1.49621 seconds
+Testing fold 2
+Fold: 2 Accuracy: 95.25% completed in 1.37995 seconds
+Testing fold 3
+Fold: 3 Accuracy: 95.125% completed in 1.35494 seconds
+Testing fold 4
+Fold: 4 Accuracy: 93.0625% completed in 1.30651 seconds
+K: 8 Accuracy: 94.5125% completed in 6.97157 seconds
+Testing k 9
+Starting 5-Folds Cross Validation
+Testing fold 0
+Fold: 0 Accuracy: 93.9375% completed in 1.30013 seconds
+Testing fold 1
+Fold: 1 Accuracy: 95.25% completed in 1.34206 seconds
+Testing fold 2
+Fold: 2 Accuracy: 94.8125% completed in 1.31361 seconds
+Testing fold 3
+Fold: 3 Accuracy: 94.8125% completed in 1.27689 seconds
+Testing fold 4
+Fold: 4 Accuracy: 92.625% completed in 1.3276 seconds
+K: 9 Accuracy: 94.2875% completed in 6.56478 seconds
+Testing k 10
+Starting 5-Folds Cross Validation
+Testing fold 0
+Fold: 0 Accuracy: 93.5625% completed in 1.33115 seconds
+Testing fold 1
+Fold: 1 Accuracy: 94.8125% completed in 1.33707 seconds
+Testing fold 2
+Fold: 2 Accuracy: 95.0625% completed in 1.23885 seconds
+Testing fold 3
+Fold: 3 Accuracy: 94.6875% completed in 1.24681 seconds
+Testing fold 4
+Fold: 4 Accuracy: 93% completed in 1.29734 seconds
+K: 10 Accuracy: 94.225% completed in 6.45618 seconds
+Best k: 3 found in 65.747 seconds
+Test accuracy: 0.95375 completed in 13.854 seconds
+Total elapsed time 79.8242 seconds
+CSV,knn_seq_opt,1,8000,4000,24000,10,5,3,0.953750,79.824250,0.223118,65.747041,13.854040,0.000000,,,,

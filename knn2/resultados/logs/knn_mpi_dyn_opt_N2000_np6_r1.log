@@ -1,0 +1,29 @@
+Procesos MPI: 6 (ajuste: 5, evaluacion: 1) | modo dinamico | K en [1, 10], 5 folds, 2000 muestras de ajuste, 1000 de test, 6000 de entrenamiento final, K inicial 1
+K: 1 Accuracy: 91.15%
+K: 2 Accuracy: 90.25%
+K: 3 Accuracy: 90.9%
+K: 4 Accuracy: 91.6%
+K: 5 Accuracy: 90.8%
+K: 6 Accuracy: 90.55%
+K: 7 Accuracy: 89.75%
+K: 8 Accuracy: 89.55%
+K: 9 Accuracy: 89.35%
+K: 10 Accuracy: 88.9%
+Best k: 4
+Test accuracy: 0.938
+Evolucion del mejor K conocido (segundos desde el inicio):
+  t=0.000  K inicial supuesto = 1
+  t=0.588  nuevo mejor K = 1
+  t=1.108  nuevo mejor K = 4
+  t=1.913  ajuste completo, K definitivo = 4
+Reinicios de la evaluacion (lider): 1, trabajo descartado (suma de evaluadores): 0.746 s
+Por proceso (segundos):
+  proceso 0 [ajuste]      termina a t=1.811  tareas=10  calculo=1.220
+  proceso 1 [ajuste]      termina a t=1.835  tareas=10  calculo=1.268
+  proceso 2 [ajuste]      termina a t=1.813  tareas=9  calculo=1.204
+  proceso 3 [ajuste]      termina a t=1.813  tareas=10  calculo=1.250
+  proceso 4 [ajuste]      termina a t=1.890  tareas=11  calculo=1.341
+  proceso 5 [evaluacion]  termina a t=2.268  evaluacion=1.904 (descartado=0.746)  espera=0.000  reinicios=1  ayuda al ajuste: 0 tareas, 0.000 s
+Carga del dataset (replicada, maximo): 0.360
+Total elapsed time 2.268 seconds
+CSV,knn_mpi_dyn_opt,6,2000,1000,6000,10,5,4,0.938000,2.267696,0.359765,,,,5,1,1,0.746065

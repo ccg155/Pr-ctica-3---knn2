@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/knn2_tests.dir/tests.cc.o CMakeFiles/knn2_tests.dir/sample.cc.o CMakeFiles/knn2_tests.dir/knn.cc.o CMakeFiles/knn2_tests.dir/mnist.cc.o CMakeFiles/knn2_tests.dir/crossValidation.cc.o -o knn2_tests 

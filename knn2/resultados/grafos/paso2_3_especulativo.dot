@@ -1,0 +1,32 @@
+// Solucion paralela PASOS 2 y 3: paralelismo funcional + ejecucion especulativa
+digraph especulativo {
+  rankdir=LR; nodesep=0.4; ranksep=0.7; compound=true;
+  node [shape=box, fontname="Helvetica", fontsize=10, style=rounded];
+  edge [fontname="Helvetica", fontsize=9];
+
+  subgraph cluster_T { label="GRUPO DE AJUSTE (procesos 0 .. nT-1)"; style=dashed; fontname="Helvetica"; fontsize=11;
+    ta [label="proceso de ajuste\nestatico: tareas (k, fold) ciclicas\ndinamico: pide una tarea, la calcula,\nenvia el resultado, pide otra"];
+  }
+
+  subgraph cluster_E { label="GRUPO DE EVALUACION (procesos nT .. P-1; lider = nT)  -  comunicador propio (MPI_Comm_split)"; style=dashed; fontname="Helvetica"; fontsize=11;
+    lead [label="LIDER\n1) clasifica su bloque de test con el\n   mejor K conocido (K inicial supuesto)\n2) cada 25 muestras: MPI_Iprobe\n3) tracker: cuando un K completa sus\n   folds, es el mejor hasta ahora?\n4) avisa de cada cambio de K"];
+    work [label="procesos de evaluacion\n1) clasifican su bloque con el K vigente\n2) cada 25 muestras: MPI_Iprobe\n3) K nuevo -> DESCARTAN y REINICIAN\n4) K definitivo + bloque hecho -> fin"];
+    help [shape=note, style="", label="MODO DINAMICO (paso 3):\nsi el bloque esta hecho y el ajuste\nno ha terminado, AYUDAN pidiendo\ntareas de ajuste al lider"];
+    work -> help [style=dotted, arrowhead=none];
+  }
+
+  ta -> lead [label="MPI_Isend {tarea, accuracy}\n(TAG_RESULT, cada vez que acaba una tarea)", color="#1f77b4", fontcolor="#1f77b4"];
+  lead -> ta [label="(dinamico) TAG_TASK {tarea | -1}\nrespuesta a TAG_REQ", style=dashed, color="#1f77b4", fontcolor="#1f77b4"];
+  lead -> work [label="MPI_Isend {K, definitivo?}\n(TAG_BEST, cuando mejora el K;\nel ultimo con definitivo = 1)", color="#d62728", fontcolor="#d62728"];
+  work -> lead [label="(dinamico) TAG_REQ y\nTAG_RESULT de la ayuda", style=dashed, color="#2ca02c", fontcolor="#2ca02c"];
+
+  bar [shape=box, style="filled,rounded", fillcolor="#ffe9c7", label="MPI_Ibarrier final (sin gastar CPU;\nel lider sigue atendiendo peticiones)"];
+  red [shape=box, style="filled,rounded", fillcolor="#ffe9c7", label="MPI_Reduce(SUM) de aciertos\nen el comunicador del grupo\n+ MPI_Gather de metricas -> lider"];
+  ta -> bar; lead -> bar; work -> bar;
+  bar -> red;
+  out [shape=oval, label="lider: Best k, Test accuracy,\nevolucion del mejor K, reinicios,\ntrabajo descartado, CSV"];
+  red -> out;
+
+  det [shape=note, style="", fontsize=9, label="K definitivo = mayor accuracy;\nen empate, el K menor\n(igual que el secuencial).\nResultado identico al secuencial."];
+  det -> lead [style=dotted, arrowhead=none];
+}

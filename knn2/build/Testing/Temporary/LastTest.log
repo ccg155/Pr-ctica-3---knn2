@@ -1,0 +1,24 @@
+Start testing: Nov 03 11:16 CET
+----------------------------------------------------------
+1/1 Testing: knn2_tests
+1/1 Test: knn2_tests
+Command: "/home/alu/Escritorio/Práctica 3 - knn2/knn2/build/knn2_tests"
+Directory: /home/alu/Escritorio/Práctica 3 - knn2/knn2/build
+"knn2_tests" start time: Nov 03 11:16 CET
+Output:
+----------------------------------------------------------
+Truncated MNIST data
+Starting 2-Folds Cross Validation
+Testing fold 0
+0/21/2Fold: 0 Accuracy: 100% completed in 1.9791e-05 seconds
+Testing fold 1
+0/31/32/3Fold: 1 Accuracy: 100% completed in 6.702e-06 seconds
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"knn2_tests" end time: Nov 03 11:16 CET
+"knn2_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Nov 03 11:16 CET
